@@ -1,0 +1,12 @@
+/* Appointments.css */
+.table-container {
+    padding: 1rem;
+    overflow-x: auto;
+  }
+  
+  @media (max-width: 768px) {
+    .table-container {
+      padding: 0.5rem;
+    }
+  }
+  
