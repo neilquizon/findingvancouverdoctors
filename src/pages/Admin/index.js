@@ -6,11 +6,13 @@ import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { GetUserById } from "../../apicalls/users";
 import AppointmentsList from "./AppointmentsList";
+import { useNavigate } from "react-router-dom";
 
 function Admin() {
   const [isAdmin, setIsAdmin] = React.useState(false);
   const user = JSON.parse(localStorage.getItem("user"));
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const checkIsAdmin = async () => {
     try {
@@ -31,20 +33,23 @@ function Admin() {
   useEffect(() => {
     checkIsAdmin();
   }, []);
+
   return (
-    isAdmin && <div className="bg-white p-1">
-      <Tabs>
-        <Tabs.TabPane tab="Users" key="1">
-          <UsersList />
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="Doctors" key="2">
-          <DoctorsList />
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="Appointments" key="3">
-          <AppointmentsList />
-        </Tabs.TabPane>
-      </Tabs>
-    </div>
+    isAdmin && (
+      <div className="bg-white p-1">
+        <Tabs>
+          <Tabs.TabPane tab="Users" key="1">
+            <UsersList />
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="Doctors" key="2">
+            <DoctorsList />
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="Appointments" key="3">
+            <AppointmentsList />
+          </Tabs.TabPane>
+        </Tabs>
+      </div>
+    )
   );
 }
 

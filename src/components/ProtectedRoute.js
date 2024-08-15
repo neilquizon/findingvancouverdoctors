@@ -19,18 +19,21 @@ function ProtectedRoute({ children }) {
         <div className="layout p-1">
             <div
                 className="header p-2 flex justify-between items-center"
-                style={{ backgroundColor: "#0077B5" }}
+                style={{ 
+                    backgroundColor: "#0077B5",
+                    flexWrap: "wrap"  // Ensure wrapping on smaller screens
+                }}
             >
                 <h2
                     className="cursor-pointer"
                     onClick={() => navigate("/")}
-                    style={{ color: "white" }}
+                    style={{ color: "white", fontSize: "1.6rem", marginBottom: "0.5rem" }} // Adjust font size
                 >
                     <strong>FINDING VANCOUVER </strong>
                     <strong>DOCTOR</strong>
                 </h2>
                 {user && (
-                    <div className="flex gap-3 items-center">
+                    <div className="flex gap-3 items-center" style={{ flexWrap: "wrap" }}>
                         <div className="flex gap-1 items-center">
                             <i className="ri-shield-user-line" style={{ color: "white" }}></i>
                             <h4
@@ -39,7 +42,7 @@ function ProtectedRoute({ children }) {
                                     if (user.role === "admin") navigate("/admin");
                                     else navigate("/profile");
                                 }}
-                                style={{ color: "white" }}
+                                style={{ color: "white", marginBottom: "0.5rem" }}
                             >
                                 {user.name}
                             </h4>
@@ -50,7 +53,7 @@ function ProtectedRoute({ children }) {
                                 localStorage.removeItem("user");
                                 navigate("/"); // Navigate to home page after logout
                             }}
-                            style={{ color: "white" }}
+                            style={{ color: "white", textDecoration: "none", whiteSpace: "nowrap" }} // Prevent text wrap
                         >
                             LOGOUT
                         </span>

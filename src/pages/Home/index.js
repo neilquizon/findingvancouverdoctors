@@ -43,7 +43,7 @@ function Home() {
   };
 
   const filteredDoctors = doctors
-    .filter((doctor) => doctor.status === "approved") // Only include doctors with status "approved"
+    .filter((doctor) => doctor.status === "approved")
     .filter((doctor) => {
       const fullName = `${doctor.firstName} ${doctor.lastName}`.toLowerCase();
       const speciality = doctor.speciality?.toLowerCase() || '';
@@ -60,7 +60,6 @@ function Home() {
       );
     });
 
-  // Sort the filtered doctors alphabetically by full name
   const sortedDoctors = filteredDoctors.sort((a, b) => {
     const fullNameA = `${a.firstName} ${a.lastName}`.toLowerCase();
     const fullNameB = `${b.firstName} ${b.lastName}`.toLowerCase();
@@ -87,7 +86,7 @@ function Home() {
     <div className="layout p-1">
       <div
         className="header p-2 flex justify-between items-center"
-        style={{ backgroundColor: "#0077B5" }}
+        style={{ backgroundColor: "#0077B5", flexWrap: 'wrap' }}
       >
         <h2
           className="cursor-pointer"
@@ -98,7 +97,7 @@ function Home() {
           <strong>DOCTOR</strong>
         </h2>
         {user ? (
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-3 items-center" style={{ flexWrap: 'wrap' }}>
             <div className="flex gap-1 items-center">
               <i className="ri-shield-user-line" style={{ color: "white" }}></i>
               <h4
