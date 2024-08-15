@@ -1,14 +1,19 @@
 import { Button, Form, message } from "antd";
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { GetSecretQuestion, ValidateSecretAnswer, UpdatePassword } from "../../apicalls/users";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { useDispatch } from "react-redux";
+import { AiOutlineHome } from "react-icons/ai"; // Import the home icon
 
 // Header component
 const Header = () => (
-    <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif' }}>
-        <h1 style={{ color: 'white', textAlign: 'center', fontSize: '2rem' }}>Finding Vancouver Doctor</h1>
+    <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ color: 'white', fontSize: '1.6rem', margin: 0 }}>FINDING VANCOUVER DOCTOR</h1>
+        <Link to="/" style={{ color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <AiOutlineHome /> {/* Home icon */}
+            <span style={{ marginLeft: '0.5rem', color: 'white' }}>HOME</span>
+        </Link>
     </header>
 );
 
@@ -20,8 +25,6 @@ const Footer = () => (
 );
 
 function ForgotPassword() {
-    console.log("ForgotPassword component rendered");
-
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const [step, setStep] = useState(1);

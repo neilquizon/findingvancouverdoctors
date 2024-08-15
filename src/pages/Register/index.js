@@ -4,11 +4,16 @@ import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { CreateUser } from "../../apicalls/users";
 import { ShowLoader } from "../../redux/loaderSlice";
+import { AiOutlineHome } from "react-icons/ai"; // Import the home icon
 
 // Header component
 const Header = () => (
-    <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif' }}>
-        <h1 style={{ color: 'white', textAlign: 'center', fontSize: '2rem' }}>FINDING VANCOUVER DOCTOR</h1>
+    <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ color: 'white', fontSize: '1.6rem', margin: 0 }}>FINDING VANCOUVER DOCTOR</h1>
+        <Link to="/" style={{ color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <AiOutlineHome /> {/* Home icon */}
+            <span style={{ marginLeft: '0.5rem', color: 'white' }}>HOME</span>
+        </Link>
     </header>
 );
 
