@@ -28,7 +28,9 @@ function Appointments() {
       }
       dispatch(ShowLoader(false));
       if (response.success) {
-        setAppointments(response.data);
+        // Sort appointments by date before setting the state
+        const sortedAppointments = response.data.sort((a, b) => moment(a.date).unix() - moment(b.date).unix());
+        setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
       }
@@ -130,7 +132,7 @@ function Appointments() {
     { title: 'Time', dataIndex: 'slot', key: 'slot' },
     { title: 'Doctor', dataIndex: 'doctorName', key: 'doctorName' },
     { title: 'Patient', dataIndex: 'userName', key: 'userName' },
-    { title: 'Booked At', dataIndex: 'bookedOn', key: 'bookedOn' },
+    { title: 'Booked On', dataIndex: 'bookedOn', key: 'bookedOn' },
     { title: 'Problem', dataIndex: 'problem', key: 'problem' },
     { title: 'Status', dataIndex: 'status', key: 'status' },
     {

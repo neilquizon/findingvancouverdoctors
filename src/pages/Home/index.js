@@ -126,9 +126,9 @@ function Home() {
         ) : (
           <div className="flex gap-3 items-center">
             <h4
-              className="uppercase cursor-pointer underline"
+              className="uppercase cursor-pointer"
               onClick={() => navigate("/login")}
-              style={{ color: "white" }}
+              style={{ color: "white", textDecoration: "none" }} // Removed underline from LOGIN
             >
               LOGIN
             </h4>
