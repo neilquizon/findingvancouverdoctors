@@ -120,7 +120,7 @@ function Home() {
               }}
               style={{ color: "white", textDecoration: "underline" }}
             >
-              Log Out
+              LOGOUT
             </span>
           </div>
         ) : (

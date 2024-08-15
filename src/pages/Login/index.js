@@ -8,7 +8,7 @@ import { AiOutlineHome } from "react-icons/ai"; // Import the home icon from rea
 
 const Header = () => (
     <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ color: 'white', fontSize: '2rem' }}>Finding Vancouver Doctor</h1>
+        <h1 style={{ color: 'white', fontSize: '2rem' }}>FINDING VANCOUVER DOCTOR</h1>
         <Link to="/" style={{ color: 'white', fontSize: '1.3rem', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <AiOutlineHome /> {/* Home icon */}
             <span style={{ marginLeft: '0.5rem', color: 'white' }}>Home</span>
