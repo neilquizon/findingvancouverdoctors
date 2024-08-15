@@ -54,11 +54,11 @@ function UsersList() {
   }, []);
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
+    
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Role', dataIndex: 'role', key: 'role' },
-    { title: 'Status', dataIndex: 'status', key: 'status' },
+    
     {
       title: 'Action',
       key: 'action',
