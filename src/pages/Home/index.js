@@ -130,7 +130,7 @@ function Home() {
               onClick={() => navigate("/login")}
               style={{ color: "white" }}
             >
-              Log In
+              LOGIN
             </h4>
           </div>
         )}
