@@ -118,7 +118,7 @@ function Home() {
                 localStorage.removeItem("user");
                 navigate("/");
               }}
-              style={{ color: "white", textDecoration: "underline" }}
+              style={{ color: "white", textDecoration: "none" }} // Removed underline from LOGOUT
             >
               LOGOUT
             </span>

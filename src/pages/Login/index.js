@@ -11,7 +11,7 @@ const Header = () => (
         <h1 style={{ color: 'white', fontSize: '1.6rem' }}>FINDING VANCOUVER DOCTOR</h1>
         <Link to="/" style={{ color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <AiOutlineHome /> {/* Home icon */}
-            <span style={{ marginLeft: '0.5rem', color: 'white' }}>HOME</span>
+            <span style={{ marginLeft: '0.5rem', color: 'white', fontSize: '1.1rem'  }}>HOME</span>
         </Link>
     </header>
 );

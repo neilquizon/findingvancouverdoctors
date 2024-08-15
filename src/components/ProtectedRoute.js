@@ -50,7 +50,7 @@ function ProtectedRoute({ children }) {
                                 localStorage.removeItem("user");
                                 navigate("/"); // Navigate to home page after logout
                             }}
-                            style={{ color: "white", textDecoration: "underline" }}
+                            style={{ color: "white" }}
                         >
                             LOGOUT
                         </span>
