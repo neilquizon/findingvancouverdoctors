@@ -4,16 +4,11 @@ import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { CreateUser } from "../../apicalls/users";
 import { ShowLoader } from "../../redux/loaderSlice";
-import { AiOutlineHome } from "react-icons/ai"; // Import the home icon from react-icons
 
 // Header component
 const Header = () => (
-    <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ color: 'white', fontSize: '1.6rem' }}>FINDING VANCOUVER DOCTOR</h1>
-        <Link to="/" style={{ color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <AiOutlineHome /> {/* Home icon */}
-            <span style={{ marginLeft: '0.5rem', color: 'white' }}>HOME</span>
-        </Link>
+    <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif' }}>
+        <h1 style={{ color: 'white', textAlign: 'center', fontSize: '2rem' }}>FINDING VANCOUVER DOCTOR</h1>
     </header>
 );
 
@@ -62,47 +57,53 @@ function Register() {
         <div className="flex flex-col justify-between h-screen">
             <Header />
             <div className="flex justify-center items-center flex-grow">
-                <Form layout="vertical" className="w-400 bg-white p-2" onFinish={onFinish}>
+                <Form layout="vertical" style={{ width: '80%', maxWidth: '800px', backgroundColor: 'white', padding: '2rem', borderRadius: '8px' }} onFinish={onFinish}>
                     <h2 className="uppercase my-1">
                         <strong>Register</strong>
                     </h2>
                     <hr />
-                    <Form.Item label="Name" name="name" rules={[{ required: true, message: 'Please input your name!' }]}>
-                        <input type="text" />
-                    </Form.Item>
-                    <Form.Item label="Date of Birth" name="dob" rules={[{ required: true, message: 'Please input your date of birth!' }]}>
-                        <input type="date" />
-                    </Form.Item>
-                    <Form.Item label="Provincial Health Number" name="provincialHealthNumber" rules={[{ required: true, message: 'Please input your Provincial Health Number!' }]}>
-                        <input type="text" />
-                    </Form.Item>
-                    <Form.Item label="Address" name="address" rules={[{ required: true, message: 'Please input your address!' }]}>
-                        <input type="text" />
-                    </Form.Item>
-                    <Form.Item label="Telephone Number" name="telephoneNumber" rules={[{ required: true, message: 'Please input your Telephone Number!' }]}>
-                        <input type="text" />
-                    </Form.Item>
-                    <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Please input your email!', type: 'email' }]}>
-                        <input type="email" />
-                    </Form.Item>
-                    <Form.Item label="Password" name="password" rules={[{ required: true, message: 'Please input your password!' }]}>
-                        <input type="password" />
-                    </Form.Item>
-                    <Form.Item label="Confirm Password" name="confirmPassword" rules={[{ required: true, message: 'Please confirm your password!' }]}>
-                        <input type="password" />
-                    </Form.Item>
-                    <Form.Item label="Secret Question" name="secretQuestion" rules={[{ required: true, message: 'Please input your secret question!' }]}>
-                        <input type="text" placeholder="Enter your secret question" />
-                    </Form.Item>
-                    <Form.Item label="Secret Answer" name="secretAnswer" rules={[{ required: true, message: 'Please input your secret answer!' }]}>
-                        <input type="text" placeholder="Enter your secret answer" />
-                    </Form.Item>
+                    
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                        <Form.Item label="Name" name="name" rules={[{ required: true, message: 'Please input your name!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="text" />
+                        </Form.Item>
+                        <Form.Item label="Date of Birth" name="dob" rules={[{ required: true, message: 'Please input your date of birth!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="date" />
+                        </Form.Item>
+                        <Form.Item label="Provincial Health Number" name="provincialHealthNumber" rules={[{ required: true, message: 'Please input your Provincial Health Number!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="text" />
+                        </Form.Item>
+                        
+                        <Form.Item label="Address" name="address" rules={[{ required: true, message: 'Please input your address!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="text" />
+                        </Form.Item>
+                        <Form.Item label="Telephone Number" name="telephoneNumber" rules={[{ required: true, message: 'Please input your Telephone Number!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="text" />
+                        </Form.Item>
+                        <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Please input your email!', type: 'email' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="email" />
+                        </Form.Item>
 
-                    <button className="contained-btn my-1 w-full" type="submit">
+                        <Form.Item label="Password" name="password" rules={[{ required: true, message: 'Please input your password!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="password" />
+                        </Form.Item>
+                        <Form.Item label="Confirm Password" name="confirmPassword" rules={[{ required: true, message: 'Please confirm your password!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="password" />
+                        </Form.Item>
+                        <Form.Item label="Secret Question" name="secretQuestion" rules={[{ required: true, message: 'Please input your secret question!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="text" placeholder="Enter your secret question" />
+                        </Form.Item>
+                        
+                        <Form.Item label="Secret Answer" name="secretAnswer" rules={[{ required: true, message: 'Please input your secret answer!' }]} style={{ flex: '1 1 45%' }}>
+                            <input type="text" placeholder="Enter your secret answer" />
+                        </Form.Item>
+                    </div>
+
+                    <button style={{ marginTop: '1rem', width: '100%', padding: '0.75rem', backgroundColor: '#0073b1', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} type="submit">
                         REGISTER
                     </button>
 
-                    <Link className="underline" to="/login">
+                    <Link style={{ textDecoration: 'underline', display: 'block', marginTop: '1rem' }} to="/login">
                         Already have an account? <strong>Sign In</strong>
                     </Link>
                 </Form>
