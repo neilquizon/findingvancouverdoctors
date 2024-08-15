@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { Table, message, Modal, Select, Input } from "antd";
 import { ShowLoader } from "../../redux/loaderSlice";
-import { GetAppointments, DeleteAppointment, UpdateAppointmentStatus, SaveDoctorNotes } from "../../apicalls/appointments";
+import { GetAppointments, DeleteAppointment, UpdateAppointmentStatus, SaveDoctorNotes, UpdateProblem } from "../../apicalls/appointments";
 import moment from 'moment';
 
 const { Option } = Select;
@@ -11,6 +11,7 @@ const { TextArea } = Input;
 function AppointmentsList() {
   const [appointments, setAppointments] = React.useState([]);
   const [notes, setNotes] = React.useState({});
+  const [problems, setProblems] = React.useState({});
   const dispatch = useDispatch();
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -78,6 +79,13 @@ function AppointmentsList() {
     }));
   };
 
+  const handleProblemChange = (appointmentId, value) => {
+    setProblems(prevProblems => ({
+      ...prevProblems,
+      [appointmentId]: value,
+    }));
+  };
+
   const saveNotes = async (appointmentId) => {
     try {
       dispatch(ShowLoader(true));
@@ -85,6 +93,23 @@ function AppointmentsList() {
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success('Notes saved successfully');
+        getData();
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      dispatch(ShowLoader(false));
+      message.error(error.message);
+    }
+  };
+
+  const saveProblem = async (appointmentId) => {
+    try {
+      dispatch(ShowLoader(true));
+      const response = await UpdateProblem(appointmentId, problems[appointmentId]);
+      dispatch(ShowLoader(false));
+      if (response.success) {
+        message.success('Problem updated successfully');
         getData();
       } else {
         throw new Error(response.message);
@@ -109,7 +134,27 @@ function AppointmentsList() {
     { title: "Doctor", dataIndex: "doctorName", key: "doctorName" },
     { title: "Patient", dataIndex: "userName", key: "userName" },
     { title: "Booked At", dataIndex: "bookedOn", key: "bookedOn" },
-    { title: "Problem", dataIndex: "problem", key: "problem" },
+    {
+      title: "Problem",
+      dataIndex: "problem",
+      key: "problem",
+      render: (text, record) => {
+        if (user.role === "admin") {
+          return (
+            <div>
+              <TextArea
+                rows={2}
+                value={problems[record.id] || record.problem}
+                onChange={(e) => handleProblemChange(record.id, e.target.value)}
+              />
+              <button onClick={() => saveProblem(record.id)}>Save</button>
+            </div>
+          );
+        } else {
+          return <div>{record.problem || "No problem specified"}</div>;
+        }
+      }
+    },
     { title: "Status", dataIndex: "status", key: "status" },
     {
       title: "Doctor's Notes",

@@ -137,3 +137,14 @@ export const SaveDoctorNotes = async (appointmentId, notes) => {
     return { success: false, message: error.message };
   }
 };
+
+export const UpdateProblem = async (appointmentId, problem) => {
+  try {
+    await updateDoc(doc(firestoreDatabase, "appointments", appointmentId), {
+      problem,
+    });
+    return { success: true, message: "Problem updated successfully" };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
