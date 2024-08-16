@@ -42,6 +42,12 @@ function Home() {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
+  const handleLogout = () => {
+    message.success("You have successfully logged out.");
+    localStorage.removeItem("user");
+    navigate("/");
+  };
+
   const filteredDoctors = doctors
     .filter((doctor) => doctor.status === "approved")
     .filter((doctor) => {
@@ -113,10 +119,7 @@ function Home() {
             </div>
             <span
               className="cursor-pointer"
-              onClick={() => {
-                localStorage.removeItem("user");
-                navigate("/");
-              }}
+              onClick={handleLogout}
               style={{ color: "white", textDecoration: "none" }}
             >
               LOGOUT

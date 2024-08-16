@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { message } from "antd"; // Import the message component from antd
 
 function ProtectedRoute({ children }) {
     const navigate = useNavigate();
@@ -14,6 +15,12 @@ function ProtectedRoute({ children }) {
     if (!user) {
         return null; // Return nothing while redirecting
     }
+
+    const handleLogout = () => {
+        message.success("You have successfully logged out."); // Display the success message
+        localStorage.removeItem("user");
+        navigate("/"); // Navigate to home page after logout
+    };
 
     return (
         <div className="layout p-1">
@@ -49,10 +56,7 @@ function ProtectedRoute({ children }) {
                         </div>
                         <span
                             className="cursor-pointer"
-                            onClick={() => {
-                                localStorage.removeItem("user");
-                                navigate("/"); // Navigate to home page after logout
-                            }}
+                            onClick={handleLogout}
                             style={{ color: "white", textDecoration: "none", whiteSpace: "nowrap" }} // Prevent text wrap
                         >
                             LOGOUT
