@@ -117,7 +117,7 @@ function Home() {
                 localStorage.removeItem("user");
                 navigate("/");
               }}
-              style={{ color: "white", textDecoration: "none" }} // Removed underline from LOGOUT
+              style={{ color: "white", textDecoration: "none" }}
             >
               LOGOUT
             </span>
@@ -127,7 +127,7 @@ function Home() {
             <h4
               className="uppercase cursor-pointer"
               onClick={() => navigate("/login")}
-              style={{ color: "white", textDecoration: "none" }} // Removed underline from LOGIN
+              style={{ color: "white", textDecoration: "none" }}
             >
               LOGIN
             </h4>
@@ -168,60 +168,51 @@ function Home() {
                 style={{ backgroundColor: 'white', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', cursor: 'pointer' }}
                 onClick={() => handleDoctorClick(doctor.id)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                  <h2 style={{ textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                  <h2 style={{ textTransform: 'uppercase', textAlign: 'left' }}>
                     {doctor.firstName} {doctor.lastName}
                   </h2>
                 </div>
                 <hr />
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ textAlign: 'left', width: '100%' }}>
                   <h4>
-                    <b>Clinic : </b>
-                  </h4>
-                  <h4>{doctor.address}</h4>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                  <h4>
-                    <b>Speciality : </b>
-                  </h4>
-                  <h4>{doctor.speciality}</h4>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                  <h4>
-                    <b>Language : </b>
-                  </h4>
-                  <h4>{doctor.language}</h4>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                  <h4>
-                    <b>Experience : </b>
-                  </h4>
-                  <h4>{doctor.experience} Years
+                    <b>Clinic : </b>{doctor.address}
                   </h4>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ textAlign: 'left', width: '100%' }}>
                   <h4>
-                    <b>Email : </b>
+                    <b>Speciality : </b>{doctor.speciality}
                   </h4>
-                  <h4>{doctor.email}</h4>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ textAlign: 'left', width: '100%' }}>
                   <h4>
-                    <b>Phone : </b>
+                    <b>Language : </b>{doctor.language}
                   </h4>
-                  <h4>{doctor.phone}</h4>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ textAlign: 'left', width: '100%' }}>
                   <h4>
-                    <b>Days Available : </b>
+                    <b>Experience : </b>{doctor.experience} Years
                   </h4>
-                  <h4>{doctor.days.join(', ')}</h4>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ textAlign: 'left', width: '100%' }}>
                   <h4>
-                    <b>Available Time : </b>
+                    <b>Email : </b>{doctor.email}
                   </h4>
-                  <h4>{doctor.startTime} - {doctor.endTime}</h4>
+                </div>
+                <div style={{ textAlign: 'left', width: '100%' }}>
+                  <h4>
+                    <b>Phone : </b>{doctor.phone}
+                  </h4>
+                </div>
+                <div style={{ textAlign: 'left', width: '100%' }}>
+                  <h4>
+                    <b>Days Available : </b>{doctor.days.join(', ')}
+                  </h4>
+                </div>
+                <div style={{ textAlign: 'left', width: '100%' }}>
+                  <h4>
+                    <b>Available Time : </b>{doctor.startTime} - {doctor.endTime}
+                  </h4>
                 </div>
               </div>
             </Col>
