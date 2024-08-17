@@ -5,6 +5,13 @@ import { ShowLoader } from '../../redux/loaderSlice';
 import { GetAllUsers, DeleteUser } from '../../apicalls/users';
 import './UsersList.css'; // Ensure you create this CSS file
 
+// Footer Component
+const Footer = () => (
+  <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
+    <p style={{ color: 'white' }}>&copy; 2024 Finding Vancouver Doctor. All rights reserved.</p>
+  </footer>
+);
+
 function UsersList() {
   const [users, setUsers] = React.useState([]);
   const dispatch = useDispatch();
@@ -82,6 +89,7 @@ function UsersList() {
   return (
     <div className="table-container">
       <Table columns={columns} dataSource={users} pagination={false} rowKey="id" scroll={{ x: true }} />
+      <Footer /> {/* Insert the Footer component here */}
     </div>
   );
 }

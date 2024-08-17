@@ -1,4 +1,4 @@
-import { Col, Form, message, Row } from "antd";
+import { Col, Form, message, Row, Modal } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,13 @@ import {
   UpdateDoctor,
 } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
+
+// Footer Component
+const Footer = () => (
+  <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
+    <p style={{ color: 'white' }}>&copy; 2024 Finding Vancouver Doctor. All rights reserved.</p>
+  </footer>
+);
 
 const DoctorForm = () => {
   const [form] = Form.useForm();
@@ -75,6 +82,17 @@ const DoctorForm = () => {
   useEffect(() => {
     checkIfAlreadyApplied();
   }, []);
+
+  // Function to handle Cancel button click with a confirmation dialog
+  const handleCancel = () => {
+    Modal.confirm({
+      title: 'Are you sure you want to cancel?',
+      content: 'Your changes will not be saved.',
+      onOk: () => {
+        navigate("/"); // Navigate to the Home page if the user confirms
+      },
+    });
+  };
 
   return (
     <div className="bg-white p-2">
@@ -250,7 +268,7 @@ const DoctorForm = () => {
               </Col>
             </Row>
             <div className="flex justify-end gap-2">
-              <button className="outlined-btn" type="button">
+              <button className="outlined-btn" type="button" onClick={handleCancel}>
                 CANCEL
               </button>
               <button className="contained-btn" type="submit">
@@ -267,6 +285,7 @@ const DoctorForm = () => {
           </h3>
         </div>
       )}
+      <Footer /> {/* Insert the Footer component here */}
     </div>
   );
 };

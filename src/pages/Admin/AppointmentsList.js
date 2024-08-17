@@ -8,6 +8,13 @@ import moment from 'moment';
 const { Option } = Select;
 const { TextArea } = Input;
 
+// Footer Component
+const Footer = () => (
+  <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
+    <p style={{ color: 'white' }}>&copy; 2024 Finding Vancouver Doctor. All rights reserved.</p>
+  </footer>
+);
+
 function AppointmentsList() {
   const [appointments, setAppointments] = React.useState([]);
   const [notes, setNotes] = React.useState({});
@@ -228,6 +235,7 @@ function AppointmentsList() {
         rowKey="id"
         scroll={{ x: 600 }} // Enable horizontal scrolling on smaller screens
       />
+      <Footer /> {/* Insert the Footer component here */}
     </div>
   );
 }

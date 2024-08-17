@@ -5,6 +5,13 @@ import { GetAllDoctors, UpdateDoctor } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
 import './DoctorsList.css'; // Ensure you create this CSS file
 
+// Footer Component
+const Footer = () => (
+  <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
+    <p style={{ color: 'white' }}>&copy; 2024 Finding Vancouver Doctor. All rights reserved.</p>
+  </footer>
+);
+
 function DoctorsList() {
   const [doctors, setDoctors] = React.useState([]);
 
@@ -116,6 +123,7 @@ function DoctorsList() {
   return (
     <div className="table-container">
       <Table columns={columns} dataSource={doctors} pagination={false} scroll={{ x: true }} />
+      <Footer /> {/* Insert the Footer component here */}
     </div>
   );
 }

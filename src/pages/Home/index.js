@@ -1,4 +1,4 @@
-import { Col, message, Row } from "antd";
+import { Col, message, Row, Modal } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -43,9 +43,14 @@ function Home() {
   };
 
   const handleLogout = () => {
-    message.success("You have successfully logged out.");
-    localStorage.removeItem("user");
-    navigate("/");
+    Modal.confirm({
+      title: 'Are you sure you want to log out?',
+      onOk: () => {
+        message.success("You have successfully logged out.");
+        localStorage.removeItem("user");
+        navigate("/");
+      },
+    });
   };
 
   const filteredDoctors = doctors

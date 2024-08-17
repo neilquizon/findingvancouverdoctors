@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { message } from "antd"; // Import the message component from antd
+import { message, Modal } from "antd"; // Import Modal and message components from antd
 
 function ProtectedRoute({ children }) {
     const navigate = useNavigate();
@@ -17,9 +17,14 @@ function ProtectedRoute({ children }) {
     }
 
     const handleLogout = () => {
-        message.success("You have successfully logged out."); // Display the success message
-        localStorage.removeItem("user");
-        navigate("/"); // Navigate to home page after logout
+        Modal.confirm({
+            title: 'Are you sure you want to log out?',
+            onOk: () => {
+                message.success("You have successfully logged out."); // Display the success message
+                localStorage.removeItem("user");
+                navigate("/"); // Navigate to home page after logout
+            },
+        });
     };
 
     return (

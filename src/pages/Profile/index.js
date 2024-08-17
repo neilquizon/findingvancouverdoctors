@@ -4,6 +4,13 @@ import Appointments from "./Appointments";
 import DoctorForm from "../DoctorForm";
 import moment from "moment";
 
+// Footer Component
+const Footer = () => (
+  <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
+    <p style={{ color: 'white' }}>&copy; 2024 Finding Vancouver Doctor. All rights reserved.</p>
+  </footer>
+);
+
 function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
@@ -156,6 +163,7 @@ function Profile() {
           )}
         </Tabs.TabPane>
       </Tabs>
+      <Footer /> {/* Insert the Footer component here */}
     </div>
   );
 }
