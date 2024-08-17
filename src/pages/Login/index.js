@@ -34,7 +34,17 @@ function Login() {
             if (response.success) {
                 message.success(response.message);
                 localStorage.setItem("user", JSON.stringify(response.data));
-                navigate("/");
+
+                // Check if a doctor ID is stored in local storage
+                const selectedDoctorId = localStorage.getItem("selectedDoctorId");
+                if (selectedDoctorId) {
+                    // Navigate to the booking page for the selected doctor
+                    navigate(`/book-appointment/${selectedDoctorId}`);
+                    // Clear the stored doctor ID from local storage
+                    localStorage.removeItem("selectedDoctorId");
+                } else {
+                    navigate("/");
+                }
             } else {
                 throw new Error(response.message);
             }

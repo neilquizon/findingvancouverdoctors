@@ -79,6 +79,8 @@ function Home() {
 
   const handleDoctorClick = (doctorId) => {
     if (!user) {
+      // Store the doctor ID in local storage before redirecting to login
+      localStorage.setItem("selectedDoctorId", doctorId);
       navigate("/login");
     } else {
       navigate(`/book-appointment/${doctorId}`);
