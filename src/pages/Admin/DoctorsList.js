@@ -15,7 +15,13 @@ function DoctorsList() {
       const response = await GetAllDoctors();
       dispatch(ShowLoader(false));
       if (response.success) {
-        setDoctors(response.data);
+        // Sort doctors by first name and last name in alphabetical order
+        const sortedDoctors = response.data.sort((a, b) => {
+          const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+          const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        setDoctors(sortedDoctors);
       } else {
         throw new Error(response.message);
       }

@@ -15,7 +15,13 @@ function UsersList() {
       const response = await GetAllUsers();
       dispatch(ShowLoader(false));
       if (response.success) {
-        setUsers(response.data);
+        // Sort users by name in alphabetical order
+        const sortedUsers = response.data.sort((a, b) => {
+          const nameA = a.name.toLowerCase();
+          const nameB = b.name.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        setUsers(sortedUsers);
       } else {
         throw new Error(response.message);
       }
@@ -54,11 +60,9 @@ function UsersList() {
   }, []);
 
   const columns = [
-    
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Role', dataIndex: 'role', key: 'role' },
-    
     {
       title: 'Action',
       key: 'action',

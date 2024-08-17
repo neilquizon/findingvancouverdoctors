@@ -21,7 +21,11 @@ function AppointmentsList() {
       const response = await GetAppointments();
       dispatch(ShowLoader(false));
       if (response.success) {
-        setAppointments(response.data);
+        // Sort appointments by date before setting them
+        const sortedAppointments = response.data.sort((a, b) => {
+          return moment(a.date).diff(moment(b.date));
+        });
+        setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
       }
