@@ -36,6 +36,7 @@ function Appointments() {
       dispatch(ShowLoader(false));
       if (response.success) {
         const sortedAppointments = response.data.sort((a, b) => moment(a.date).unix() - moment(b.date).unix());
+        console.log(sortedAppointments); // Log the data to debug the email field
         setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
@@ -48,18 +49,34 @@ function Appointments() {
 
   const onUpdate = async (id, status) => {
     try {
-      dispatch(ShowLoader(true));
-      const response = await UpdateAppointmentStatus(id, status);
-      dispatch(ShowLoader(false));
-      if (response.success) {
-        message.success(response.message);
-        getData();
-      } else {
-        throw new Error(response.message);
-      }
+        dispatch(ShowLoader(true));
+        const appointment = appointments.find(app => app.id === id);
+        const userEmail = appointment.userEmail || appointment.user?.email; // Ensure we have the user's email
+        const response = await UpdateAppointmentStatus(id, status);
+        dispatch(ShowLoader(false));
+        if (response.success) {
+            message.success(response.message);
+
+            // Send email notification if the status is changed to "cancelled"
+            if (status === "cancelled" && userEmail) {
+                const emailSubject = "Your Appointment Has Been Cancelled";
+                const emailText = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been cancelled.\n\nThank you.`;
+                await sendEmail(userEmail, emailSubject, emailText)
+                    .then(() => {
+                        console.log('Email sent successfully');
+                    })
+                    .catch((error) => {
+                        console.error('Error sending email:', error);
+                    });
+            }
+
+            getData();
+        } else {
+            throw new Error(response.message);
+        }
     } catch (error) {
-      dispatch(ShowLoader(false));
-      message.error(error.message);
+        dispatch(ShowLoader(false));
+        message.error("Failed to update appointment: " + error.message);
     }
   };
 
@@ -68,7 +85,7 @@ function Appointments() {
       dispatch(ShowLoader(true));
       const appointment = appointments.find(app => app.id === id);
       const doctorEmail = appointment.doctorEmail; // Replace with actual doctor email from appointment data
-      const userEmail = appointment.userEmail || user.email;
+      const userEmail = appointment.userEmail || appointment.user?.email; // Ensure we have the user's email
 
       const response = await DeleteAppointment(id);
       dispatch(ShowLoader(false));
@@ -80,8 +97,12 @@ function Appointments() {
         const emailText = `The appointment on ${appointment.date} at ${appointment.slot} has been cancelled.`;
 
         // Sending emails to both doctor and user
-        await sendEmail(doctorEmail, emailSubject, emailText);
-        await sendEmail(userEmail, emailSubject, emailText);
+        if (doctorEmail) {
+          await sendEmail(doctorEmail, emailSubject, emailText);
+        }
+        if (userEmail) {
+          await sendEmail(userEmail, emailSubject, emailText);
+        }
 
         if (navigateToBookAppointment) {
           navigate(`/book-appointment/${navigateToBookAppointment}`);
@@ -151,6 +172,7 @@ function Appointments() {
     { title: 'Time', dataIndex: 'slot', key: 'slot' },
     { title: 'Doctor', dataIndex: 'doctorName', key: 'doctorName' },
     { title: 'Patient', dataIndex: 'userName', key: 'userName' },
+    { title: 'Email', dataIndex: 'userEmail', key: 'userEmail' }, // Added column for user's email
     { title: 'Booked On', dataIndex: 'bookedOn', key: 'bookedOn' },
     { title: 'Problem', dataIndex: 'problem', key: 'problem' },
     { title: 'Status', dataIndex: 'status', key: 'status' },

@@ -8,6 +8,7 @@ import {
   deleteDoc,
   where,
 } from "firebase/firestore";
+import axios from 'axios';
 import firestoreDatabase from "../firebaseConfig";
 
 export const BookDoctorAppointment = async (payload) => {
@@ -91,10 +92,22 @@ export const UpdateAppointmentStatus = async (id, status) => {
   }
 };
 
-export const DeleteAppointment = async (id) => {
+export const DeleteAppointment = async (id, doctorEmail, userEmail, cancelledBy) => {
   try {
+    // Delete the appointment from the database
     await deleteDoc(doc(firestoreDatabase, "appointments", id));
-    return { success: true, message: "Appointment deleted successfully" };
+
+    // Send cancellation email to the doctor and the user
+    if (doctorEmail || userEmail) {
+      await axios.post('http://localhost:5000/cancel-appointment', {
+        appointmentId: id,
+        doctorEmail,
+        userEmail,
+        cancelledBy,
+      });
+    }
+
+    return { success: true, message: "Appointment deleted and email sent successfully" };
   } catch (error) {
     return { success: false, message: error.message };
   }

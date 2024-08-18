@@ -96,25 +96,33 @@ function BookAppointment() {
   const onBookAppointment = async () => {
     try {
       dispatch(ShowLoader(true));
+      const user = JSON.parse(localStorage.getItem("user"));
       const payload = {
         doctorId: doctor.id,
-        userId: JSON.parse(localStorage.getItem("user")).id,
+        userId: user.id,
         date,
         slot: selectedSlot,
         doctorName: `${doctor.firstName} ${doctor.lastName}`,
-        userName: JSON.parse(localStorage.getItem("user")).name,
+        userName: user.name,
+        userEmail: user.email, // Capture the user's email
         bookedOn: moment().format("DD-MM-YYYY hh:mm A"),
         problem,
         status: "pending",
       };
       const response = await BookDoctorAppointment(payload);
       if (response.success) {
-        // Send email notification after successful booking
-        const user = JSON.parse(localStorage.getItem("user"));
+        // Send email notifications after successful booking
         const emailSubject = "Appointment Confirmation";
-        const emailText = `Your appointment with Dr. ${doctor.firstName} ${doctor.lastName} on ${date} at ${selectedSlot} has been successfully booked.`;
-
+        const emailText = `Dear ${user.name},\n\nYour appointment with Dr. ${doctor.firstName} ${doctor.lastName} on ${date} at ${selectedSlot} has been successfully booked.`;
+        
+        // Send email to the user
         await sendEmail(user.email, emailSubject, emailText);
+
+        // Send email to the doctor
+        const doctorEmailSubject = "New Appointment Booked";
+        const doctorEmailText = `Dear Dr. ${doctor.firstName} ${doctor.lastName},\n\nYou have a new appointment with ${user.name} on ${date} at ${selectedSlot}.\n\nProblem: ${problem}`;
+        
+        await sendEmail(doctor.email, doctorEmailSubject, doctorEmailText);
 
         message.success(response.message);
         navigate("/profile");

@@ -22,20 +22,24 @@ const cancelAppointment = (appointmentId, doctorEmail, userEmail, cancelledBy) =
   // Send email to both doctor and user
   const emails = [doctorEmail, userEmail];
   emails.forEach((email) => {
-    const mailOptions = {
-      from: 'findingvancouverdoctor@gmail.com',
-      to: email,
-      subject,
-      text,
-    };
+    if (email) {  // Ensure the email is not blank or undefined
+      const mailOptions = {
+        from: 'findingvancouverdoctor@gmail.com',
+        to: email,
+        subject,
+        text,
+      };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log(`Failed to send email to ${email}: `, error);
-      } else {
-        console.log(`Email sent to ${email}: `, info.response);
-      }
-    });
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log(`Failed to send email to ${email}: `, error);
+        } else {
+          console.log(`Email sent to ${email}: `, info.response);
+        }
+      });
+    } else {
+      console.log(`No email address provided for ${cancelledBy}`);
+    }
   });
 
   // Here you would typically also update the appointment status in your database
