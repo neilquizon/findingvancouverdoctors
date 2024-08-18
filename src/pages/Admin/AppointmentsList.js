@@ -2,16 +2,33 @@ import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { Table, message, Modal, Select, Input } from "antd";
 import { ShowLoader } from "../../redux/loaderSlice";
-import { GetAppointments, DeleteAppointment, UpdateAppointmentStatus, SaveDoctorNotes, UpdateProblem } from "../../apicalls/appointments";
-import moment from 'moment';
+import {
+  GetAppointments,
+  DeleteAppointment,
+  UpdateAppointmentStatus,
+  SaveDoctorNotes,
+  UpdateProblem,
+} from "../../apicalls/appointments";
+import sendEmail from "../../services/emailService"; // Import the sendEmail function
+import moment from "moment";
 
 const { Option } = Select;
 const { TextArea } = Input;
 
 // Footer Component
 const Footer = () => (
-  <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
-    <p style={{ color: 'white' }}>&copy; 2024 Finding Vancouver Doctor. All rights reserved.</p>
+  <footer
+    style={{
+      backgroundColor: "#004182",
+      color: "white",
+      padding: "1rem",
+      fontFamily: "Roboto, sans-serif",
+      textAlign: "center",
+    }}
+  >
+    <p style={{ color: "white" }}>
+      &copy; 2024 Finding Vancouver Doctor. All rights reserved.
+    </p>
   </footer>
 );
 
@@ -44,7 +61,7 @@ function AppointmentsList() {
 
   const confirmDelete = (id) => {
     Modal.confirm({
-      title: 'Are you sure you want to delete this appointment?',
+      title: "Are you sure you want to delete this appointment?",
       onOk: () => onDelete(id),
     });
   };
@@ -52,10 +69,23 @@ function AppointmentsList() {
   const onDelete = async (id) => {
     try {
       dispatch(ShowLoader(true));
+      const appointment = appointments.find((app) => app.id === id);
+      const doctorEmail = appointment.doctorEmail; // Replace with actual doctor email from appointment data
+      const userEmail = appointment.userEmail || user.email;
+
       const response = await DeleteAppointment(id);
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success(response.message);
+
+        // Send email notifications to the doctor and the user
+        const emailSubject = "Appointment Deletion Notice";
+        const emailText = `The appointment on ${appointment.date} at ${appointment.slot} has been deleted.`;
+
+        // Sending emails to both doctor and user
+        await sendEmail(doctorEmail, emailSubject, emailText);
+        await sendEmail(userEmail, emailSubject, emailText);
+
         getData();
       } else {
         throw new Error(response.message);
@@ -84,14 +114,14 @@ function AppointmentsList() {
   };
 
   const handleNotesChange = (appointmentId, value) => {
-    setNotes(prevNotes => ({
+    setNotes((prevNotes) => ({
       ...prevNotes,
       [appointmentId]: value,
     }));
   };
 
   const handleProblemChange = (appointmentId, value) => {
-    setProblems(prevProblems => ({
+    setProblems((prevProblems) => ({
       ...prevProblems,
       [appointmentId]: value,
     }));
@@ -103,7 +133,7 @@ function AppointmentsList() {
       const response = await SaveDoctorNotes(appointmentId, notes[appointmentId]);
       dispatch(ShowLoader(false));
       if (response.success) {
-        message.success('Notes saved successfully');
+        message.success("Notes saved successfully");
         getData();
       } else {
         throw new Error(response.message);
@@ -120,7 +150,7 @@ function AppointmentsList() {
       const response = await UpdateProblem(appointmentId, problems[appointmentId]);
       dispatch(ShowLoader(false));
       if (response.success) {
-        message.success('Problem updated successfully');
+        message.success("Problem updated successfully");
         getData();
       } else {
         throw new Error(response.message);
@@ -164,7 +194,7 @@ function AppointmentsList() {
         } else {
           return <div>{record.problem || "No problem specified"}</div>;
         }
-      }
+      },
     },
     { title: "Status", dataIndex: "status", key: "status" },
     {
@@ -186,20 +216,22 @@ function AppointmentsList() {
         } else {
           return <div>{record.notes || "No notes available"}</div>;
         }
-      }
-    }
+      },
+    },
   ];
 
   if (user.role === "doctor" || user.role === "admin") {
     columns.push({
-      title: 'Action',
-      dataIndex: 'action',
-      key: 'action',
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
       render: (text, record) => {
-        const isPastDate = moment(record.date).isBefore(moment(), 'day');
+        const isPastDate = moment(record.date).isBefore(moment(), "day");
         if (user.role === "admin" || !isPastDate) {
           return (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div
+              style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
+            >
               <Select
                 value={record.status}
                 onChange={(value) => handleChangeStatus(record.id, value)}
@@ -213,7 +245,7 @@ function AppointmentsList() {
                 <Option value="in progress">In Progress</Option>
               </Select>
               <span
-                style={{ textDecoration: 'underline', cursor: 'pointer' }}
+                style={{ textDecoration: "underline", cursor: "pointer" }}
                 onClick={() => confirmDelete(record.id)}
               >
                 Delete
@@ -222,7 +254,7 @@ function AppointmentsList() {
           );
         }
         return null;
-      }
+      },
     });
   }
 

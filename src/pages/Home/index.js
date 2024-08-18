@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { GetAllDoctors } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
+import sendEmail from "../../services/emailService"; // Import the sendEmail function
 
 const Footer = () => (
   <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
@@ -51,6 +52,24 @@ function Home() {
         navigate("/");
       },
     });
+  };
+
+  const handleCancelAppointment = async (appointmentId) => {
+    try {
+      dispatch(ShowLoader(true));
+      // Perform the cancellation logic here
+
+      // After cancellation, send an email
+      const emailSubject = "Appointment Cancellation";
+      const emailText = `Dear ${user.name}, your appointment has been successfully canceled.`;
+      await sendEmail(user.email, emailSubject, emailText);
+
+      message.success("Appointment canceled successfully, and email sent.");
+      dispatch(ShowLoader(false));
+    } catch (error) {
+      message.error("Failed to cancel appointment or send email.");
+      dispatch(ShowLoader(false));
+    }
   };
 
   const filteredDoctors = doctors

@@ -2,8 +2,15 @@ import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
 import { Table, message, Modal, Select, Input } from 'antd';
-import { GetDoctorAppointments, GetUserAppointments, UpdateAppointmentStatus, DeleteAppointment, SaveDoctorNotes } from '../../apicalls/appointments';
-import './Appointments.css'; // Ensure you create this CSS file
+import {
+  GetDoctorAppointments,
+  GetUserAppointments,
+  UpdateAppointmentStatus,
+  DeleteAppointment,
+  SaveDoctorNotes,
+} from '../../apicalls/appointments';
+import sendEmail from '../../services/emailService'; // Import the sendEmail function
+import './Appointments.css'; 
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,7 +35,6 @@ function Appointments() {
       }
       dispatch(ShowLoader(false));
       if (response.success) {
-        // Sort appointments by date before setting the state
         const sortedAppointments = response.data.sort((a, b) => moment(a.date).unix() - moment(b.date).unix());
         setAppointments(sortedAppointments);
       } else {
@@ -60,10 +66,23 @@ function Appointments() {
   const onDelete = async (id, navigateToBookAppointment) => {
     try {
       dispatch(ShowLoader(true));
+      const appointment = appointments.find(app => app.id === id);
+      const doctorEmail = appointment.doctorEmail; // Replace with actual doctor email from appointment data
+      const userEmail = appointment.userEmail || user.email;
+
       const response = await DeleteAppointment(id);
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success(response.message);
+
+        // Send email notifications to the doctor and the user
+        const emailSubject = 'Appointment Cancellation Notice';
+        const emailText = `The appointment on ${appointment.date} at ${appointment.slot} has been cancelled.`;
+
+        // Sending emails to both doctor and user
+        await sendEmail(doctorEmail, emailSubject, emailText);
+        await sendEmail(userEmail, emailSubject, emailText);
+
         if (navigateToBookAppointment) {
           navigate(`/book-appointment/${navigateToBookAppointment}`);
         } else {
