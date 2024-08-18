@@ -197,6 +197,11 @@ function Home() {
                 style={{ backgroundColor: 'white', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', cursor: 'pointer' }}
                 onClick={() => handleDoctorClick(doctor.id)}
               >
+                <div style={{ textAlign: 'center' }}>
+                  {doctor.profilePic && (
+                    <img src={doctor.profilePic} alt="Doctor Profile" style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
+                  )}
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
                   <h2 style={{ textTransform: 'uppercase', textAlign: 'left' }}>
                     {doctor.firstName} {doctor.lastName}

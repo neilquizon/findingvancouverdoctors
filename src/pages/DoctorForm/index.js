@@ -2,6 +2,7 @@ import { Col, Form, message, Row, Modal } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   AddDoctor,
   CheckIfDoctorAccountIsApplied,
@@ -21,11 +22,46 @@ const DoctorForm = () => {
   const [alreadyApproved, setAlreadyApproved] = useState(false);
   const [days, setDays] = useState([]);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const uploadImage = async () => {
+    if (!image) {
+      message.error("Please select an image first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", image);
+    formData.append("upload_preset", "findingvancouverdoctor"); // Replace with your Cloudinary upload preset name
+
+    setLoading(true);
+
+    try {
+      const res = await axios.post(
+        `https://api.cloudinary.com/v1_1/djibhmgu6/image/upload`, // Replace with your Cloudinary cloud name
+        formData
+      );
+      setImageUrl(res.data.secure_url);
+      setLoading(false);
+      message.success("Image uploaded successfully!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      setLoading(false);
+      message.error("Failed to upload image.");
+    }
+  };
+
   const onFinish = async (values) => {
     try {
+      if (!imageUrl) {
+        message.error("Please upload a profile picture.");
+        return;
+      }
+
       dispatch(ShowLoader(true));
       const payload = {
         ...values,
@@ -33,6 +69,7 @@ const DoctorForm = () => {
         userId: JSON.parse(localStorage.getItem("user")).id,
         status: "pending",
         role: "doctor",
+        profilePic: imageUrl, // Save the image URL to the payload
       };
       let response = null;
       if (alreadyApproved) {
@@ -68,6 +105,7 @@ const DoctorForm = () => {
           setAlreadyApproved(true);
           form.setFieldsValue(response.data);
           setDays(response.data.days);
+          setImageUrl(response.data.profilePic); // Set the existing profile pic URL if any
         }
       } else {
         setAlreadyApplied(false);
@@ -170,6 +208,19 @@ const DoctorForm = () => {
                   rules={[{ required: true, message: "Required" }]}
                 >
                   <textarea type="text" />
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Form.Item label="Profile Picture">
+                  <input type="file" onChange={(e) => setImage(e.target.files[0])} />
+                  <button type="button" onClick={uploadImage} disabled={loading}>
+                    {loading ? "Uploading..." : "Upload Image"}
+                  </button>
+                  {imageUrl && (
+                    <div style={{ marginTop: "10px" }}>
+                      <img src={imageUrl} alt="Profile" style={{ width: "100px", height: "100px", borderRadius: "50%" }} />
+                    </div>
+                  )}
                 </Form.Item>
               </Col>
               <Col span={24}>
