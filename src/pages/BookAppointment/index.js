@@ -9,6 +9,7 @@ import {
   BookDoctorAppointment,
   GetDoctorAppointmentsOnDate,
 } from "../../apicalls/appointments";
+import sendEmail from "../../services/emailService"; // Import the sendEmail function
 
 function BookAppointment() {
   const [problem, setProblem] = React.useState("");
@@ -108,6 +109,13 @@ function BookAppointment() {
       };
       const response = await BookDoctorAppointment(payload);
       if (response.success) {
+        // Send email notification after successful booking
+        const user = JSON.parse(localStorage.getItem("user"));
+        const emailSubject = "Appointment Confirmation";
+        const emailText = `Your appointment with Dr. ${doctor.firstName} ${doctor.lastName} on ${date} at ${selectedSlot} has been successfully booked.`;
+
+        await sendEmail(user.email, emailSubject, emailText);
+
         message.success(response.message);
         navigate("/profile");
       } else {
@@ -188,7 +196,7 @@ function BookAppointment() {
             </h4>
             <h4>{doctor.address}</h4>
           </div>
-                    <div className="flex justify-between w-full">
+          <div className="flex justify-between w-full">
             <h4>
               <b>Days Available: </b>
             </h4>
