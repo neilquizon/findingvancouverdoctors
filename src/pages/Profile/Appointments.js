@@ -1,15 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
-import { Table, message, Modal, Select, Input } from 'antd';
+import { Table, message, Modal, Select, Input, Button } from 'antd';
 import {
   GetDoctorAppointments,
   GetUserAppointments,
   UpdateAppointmentStatus,
   DeleteAppointment,
   SaveDoctorNotes,
+  SubmitRating, // Import the SubmitRating function
 } from '../../apicalls/appointments';
-import sendEmail from '../../services/emailService'; // Import the sendEmail function
+import sendEmail from '../../services/emailService'; 
 import './Appointments.css'; 
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
@@ -18,8 +19,10 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 function Appointments() {
-  const [appointments, setAppointments] = React.useState([]);
-  const [notes, setNotes] = React.useState({});
+  const [appointments, setAppointments] = useState([]);
+  const [notes, setNotes] = useState({});
+  const [ratedAppointments, setRatedAppointments] = useState(new Set());
+  const [rating, setRating] = useState({});
   const dispatch = useDispatch();
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
@@ -36,7 +39,15 @@ function Appointments() {
       dispatch(ShowLoader(false));
       if (response.success) {
         const sortedAppointments = response.data.sort((a, b) => moment(a.date).unix() - moment(b.date).unix());
-        console.log(sortedAppointments); // Log the data to debug the email field
+
+        const ratedSet = new Set();
+        sortedAppointments.forEach(appointment => {
+          if (appointment.rating) {
+            ratedSet.add(appointment.id);
+          }
+        });
+
+        setRatedAppointments(ratedSet);
         setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
@@ -49,34 +60,27 @@ function Appointments() {
 
   const onUpdate = async (id, status) => {
     try {
-        dispatch(ShowLoader(true));
-        const appointment = appointments.find(app => app.id === id);
-        const userEmail = appointment.userEmail || appointment.user?.email; // Ensure we have the user's email
-        const response = await UpdateAppointmentStatus(id, status);
-        dispatch(ShowLoader(false));
-        if (response.success) {
-            message.success(response.message);
+      dispatch(ShowLoader(true));
+      const appointment = appointments.find(app => app.id === id);
+      const userEmail = appointment.userEmail || appointment.user?.email; 
+      const response = await UpdateAppointmentStatus(id, status);
+      dispatch(ShowLoader(false));
+      if (response.success) {
+        message.success(response.message);
 
-            // Send email notification if the status is changed to "cancelled"
-            if (status === "cancelled" && userEmail) {
-                const emailSubject = "Your Appointment Has Been Cancelled";
-                const emailText = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been cancelled.\n\nThank you.`;
-                await sendEmail(userEmail, emailSubject, emailText)
-                    .then(() => {
-                        console.log('Email sent successfully');
-                    })
-                    .catch((error) => {
-                        console.error('Error sending email:', error);
-                    });
-            }
-
-            getData();
-        } else {
-            throw new Error(response.message);
+        if (status === "cancelled" && userEmail) {
+          const emailSubject = "Your Appointment Has Been Cancelled";
+          const emailText = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been cancelled.\n\nThank you.`;
+          await sendEmail(userEmail, emailSubject, emailText);
         }
+
+        getData();
+      } else {
+        throw new Error(response.message);
+      }
     } catch (error) {
-        dispatch(ShowLoader(false));
-        message.error("Failed to update appointment: " + error.message);
+      dispatch(ShowLoader(false));
+      message.error("Failed to update appointment: " + error.message);
     }
   };
 
@@ -84,19 +88,17 @@ function Appointments() {
     try {
       dispatch(ShowLoader(true));
       const appointment = appointments.find(app => app.id === id);
-      const doctorEmail = appointment.doctorEmail; // Replace with actual doctor email from appointment data
-      const userEmail = appointment.userEmail || appointment.user?.email; // Ensure we have the user's email
+      const doctorEmail = appointment.doctorEmail;
+      const userEmail = appointment.userEmail || appointment.user?.email; 
 
       const response = await DeleteAppointment(id);
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success(response.message);
 
-        // Send email notifications to the doctor and the user
         const emailSubject = 'Appointment Cancellation Notice';
         const emailText = `The appointment on ${appointment.date} at ${appointment.slot} has been cancelled.`;
 
-        // Sending emails to both doctor and user
         if (doctorEmail) {
           await sendEmail(doctorEmail, emailSubject, emailText);
         }
@@ -142,6 +144,38 @@ function Appointments() {
     }
   };
 
+  const handleRatingChange = (appointmentId, value) => {
+    setRating(prevRating => ({
+      ...prevRating,
+      [appointmentId]: value,
+    }));
+  };
+
+  const submitRating = async (appointmentId) => {
+    try {
+      const selectedRating = rating[appointmentId];
+      if (!selectedRating) {
+        message.error("Please select a rating before submitting.");
+        return;
+      }
+
+      dispatch(ShowLoader(true));
+      const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating);
+      dispatch(ShowLoader(false));
+
+      if (response.success) {
+        message.success('Rating submitted successfully');
+        setRatedAppointments(new Set([...ratedAppointments, appointmentId]));
+        getData();
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      dispatch(ShowLoader(false));
+      message.error(error.message);
+    }
+  };
+
   useEffect(() => {
     getData();
   }, []);
@@ -172,7 +206,7 @@ function Appointments() {
     { title: 'Time', dataIndex: 'slot', key: 'slot' },
     { title: 'Doctor', dataIndex: 'doctorName', key: 'doctorName' },
     { title: 'Patient', dataIndex: 'userName', key: 'userName' },
-    { title: 'Email', dataIndex: 'userEmail', key: 'userEmail' }, // Added column for user's email
+    { title: 'Email', dataIndex: 'userEmail', key: 'userEmail' }, 
     { title: 'Booked On', dataIndex: 'bookedOn', key: 'bookedOn' },
     { title: 'Problem', dataIndex: 'problem', key: 'problem' },
     { title: 'Status', dataIndex: 'status', key: 'status' },
@@ -195,6 +229,33 @@ function Appointments() {
         } else {
           return <div>{record.notes || "No notes available"}</div>;
         }
+      }
+    },
+    {
+      title: 'Rate Doctor',
+      dataIndex: 'rateDoctor',
+      key: 'rateDoctor',
+      render: (text, record) => {
+        if (user.role !== "doctor" && !ratedAppointments.has(record.id)) {
+          return (
+            <div>
+              <Select
+                style={{ width: 120 }}
+                value={rating[record.id]}
+                onChange={(value) => handleRatingChange(record.id, value)}
+                placeholder="Rate"
+              >
+                {[1, 2, 3, 4, 5].map(star => (
+                  <Option key={star} value={star}>{`${star} Star${star > 1 ? 's' : ''}`}</Option>
+                ))}
+              </Select>
+              <Button type="primary" onClick={() => submitRating(record.id)}>
+                Submit Rating
+              </Button>
+            </div>
+          );
+        }
+        return 'Rated';
       }
     }
   ];
@@ -264,7 +325,7 @@ function Appointments() {
         dataSource={appointments}
         pagination={false}
         rowKey="id"
-        scroll={{ x: 600 }} // Enable horizontal scrolling on smaller screens
+        scroll={{ x: 600 }} 
       />
     </div>
   );

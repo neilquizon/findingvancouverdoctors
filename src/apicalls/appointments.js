@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc, // Added getDoc import
   getDocs,
   query,
   updateDoc,
@@ -159,5 +160,53 @@ export const UpdateProblem = async (appointmentId, problem) => {
     return { success: true, message: "Problem updated successfully" };
   } catch (error) {
     return { success: false, message: error.message };
+  }
+};
+
+// SubmitRating function
+export const SubmitRating = async (doctorId, userId, rating) => {
+  try {
+    // Fetch the existing appointment
+    const appointmentsRef = collection(firestoreDatabase, "appointments");
+    const q = query(appointmentsRef, where("doctorId", "==", doctorId), where("userId", "==", userId));
+    const appointmentSnapshot = await getDocs(q);
+
+    if (!appointmentSnapshot.empty) {
+      // Assume there is only one appointment for a given doctor-user pair
+      const appointmentDoc = appointmentSnapshot.docs[0];
+      const appointmentData = appointmentDoc.data();
+
+      // Update the rating in the appointment document
+      await updateDoc(doc(firestoreDatabase, "appointments", appointmentDoc.id), {
+        rating: rating,
+      });
+
+      // Optionally, update the doctor's average rating
+      const doctorRef = doc(firestoreDatabase, "doctors", doctorId);
+      const doctorDoc = await getDoc(doctorRef);
+
+      if (doctorDoc.exists()) {
+        const doctorData = doctorDoc.data();
+        const newRatingCount = (doctorData.ratingCount || 0) + 1;
+        const newAverageRating = ((doctorData.averageRating || 0) * (newRatingCount - 1) + rating) / newRatingCount;
+
+        await updateDoc(doctorRef, {
+          averageRating: newAverageRating,
+          ratingCount: newRatingCount,
+        });
+      }
+
+      return {
+        success: true,
+        message: "Rating submitted successfully",
+      };
+    } else {
+      throw new Error("Appointment not found for this doctor and user");
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
   }
 };

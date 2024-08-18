@@ -1,10 +1,10 @@
-import { Col, message, Row, Modal } from "antd";
+import { Col, message, Row, Modal, Rate } from "antd"; // Import Rate from antd
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { GetAllDoctors } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
-import sendEmail from "../../services/emailService"; // Import the sendEmail function
+import sendEmail from "../../services/emailService"; 
 
 const Footer = () => (
   <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
@@ -54,22 +54,15 @@ function Home() {
     });
   };
 
-  const handleCancelAppointment = async (appointmentId) => {
-    try {
-      dispatch(ShowLoader(true));
-      // Perform the cancellation logic here
-
-      // After cancellation, send an email
-      const emailSubject = "Appointment Cancellation";
-      const emailText = `Dear ${user.name}, your appointment has been successfully canceled.`;
-      await sendEmail(user.email, emailSubject, emailText);
-
-      message.success("Appointment canceled successfully, and email sent.");
-      dispatch(ShowLoader(false));
-    } catch (error) {
-      message.error("Failed to cancel appointment or send email.");
-      dispatch(ShowLoader(false));
+  const calculateAverageRating = (doctor) => {
+    if (doctor.averageRating && doctor.ratingCount) {
+      return doctor.averageRating;
     }
+
+    if (!doctor.ratings || doctor.ratings.length === 0) return 0;
+
+    const total = doctor.ratings.reduce((sum, rating) => sum + rating, 0);
+    return total / doctor.ratings.length;
   };
 
   const filteredDoctors = doctors
@@ -98,7 +91,6 @@ function Home() {
 
   const handleDoctorClick = (doctorId) => {
     if (!user) {
-      // Store the doctor ID in local storage before redirecting to login
       localStorage.setItem("selectedDoctorId", doctorId);
       navigate("/login");
     } else {
@@ -206,6 +198,9 @@ function Home() {
                   <h2 style={{ textTransform: 'uppercase', textAlign: 'left' }}>
                     {doctor.firstName} {doctor.lastName}
                   </h2>
+                </div>
+                <div style={{ textAlign: 'left', width: '100%' }}>
+                  <Rate disabled value={calculateAverageRating(doctor)} /> {/* Display average rating */}
                 </div>
                 <hr />
                 <div style={{ textAlign: 'left', width: '100%' }}>
