@@ -200,7 +200,15 @@ function Home() {
                   </h2>
                 </div>
                 <div style={{ textAlign: 'left', width: '100%' }}>
-                  <Rate disabled value={calculateAverageRating(doctor)} /> {/* Display average rating */}
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Rate disabled value={calculateAverageRating(doctor)} />
+                    <span style={{ marginLeft: '0.5rem' }}>
+                      {calculateAverageRating(doctor).toFixed(1)}
+                    </span>
+                  </div>
+                  <div>
+                    <small>{doctor.ratingCount || 0} review{doctor.ratingCount !== 1 ? 's' : ''}</small>
+                  </div>
                 </div>
                 <hr />
                 <div style={{ textAlign: 'left', width: '100%' }}>
