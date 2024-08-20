@@ -68,9 +68,9 @@ function Appointments() {
       if (response.success) {
         message.success(response.message);
 
-        if (status === "cancelled" && userEmail) {
-          const emailSubject = "Your Appointment Has Been Cancelled";
-          const emailText = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been cancelled.\n\nThank you.`;
+        if (userEmail) {
+          const emailSubject = `Your Appointment Status Has Been Updated to "${status}"`;
+          const emailText = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been updated to "${status}".\n\nThank you.`;
           await sendEmail(userEmail, emailSubject, emailText);
         }
 
@@ -134,6 +134,15 @@ function Appointments() {
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success('Notes saved successfully');
+
+        // Send an email notification to the user when notes are updated
+        const appointment = appointments.find(app => app.id === appointmentId);
+        if (appointment.userEmail) {
+          const emailSubject = `Your Appointment Notes Have Been Updated`;
+          const emailText = `Dear ${appointment.userName},\n\nDr. ${appointment.doctorName} has updated the notes for your appointment on ${appointment.date} at ${appointment.slot}.\n\nNew Notes: ${notes[appointmentId]}\n\nThank you.`;
+          await sendEmail(appointment.userEmail, emailSubject, emailText);
+        }
+
         getData();
       } else {
         throw new Error(response.message);

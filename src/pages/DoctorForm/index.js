@@ -336,7 +336,7 @@ const DoctorForm = () => {
           </h3>
         </div>
       )}
-      <Footer /> {/* Insert the Footer component here */}
+      
     </div>
   );
 };
