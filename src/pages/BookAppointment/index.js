@@ -1,5 +1,5 @@
-import { message } from "antd";
-import React, { useEffect } from "react";
+import { message, Rate } from "antd";
+import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { GetDoctorById } from "../../apicalls/doctors";
@@ -12,14 +12,14 @@ import {
 import sendEmail from "../../services/emailService"; // Import the sendEmail function
 
 function BookAppointment() {
-  const [problem, setProblem] = React.useState("");
-  const [date, setDate] = React.useState("");
-  const [doctor, setDoctor] = React.useState(null);
-  const [selectedSlot, setSelectedSlot] = React.useState("");
+  const [problem, setProblem] = useState("");
+  const [date, setDate] = useState("");
+  const [doctor, setDoctor] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState("");
   const navigate = useNavigate();
   const { id } = useParams();
   const dispatch = useDispatch();
-  const [bookedSlots, setBookedSlots] = React.useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
 
   const getData = async () => {
     try {
@@ -162,6 +162,17 @@ function BookAppointment() {
     }
   }, [date]);
 
+  const calculateAverageRating = (doctor) => {
+    if (doctor.averageRating && doctor.ratingCount) {
+      return doctor.averageRating;
+    }
+
+    if (!doctor.ratings || doctor.ratings.length === 0) return 0;
+
+    const total = doctor.ratings.reduce((sum, rating) => sum + rating, 0);
+    return total / doctor.ratings.length;
+  };
+
   return (
     doctor && (
       <div className="bg-white p-2">
@@ -170,6 +181,20 @@ function BookAppointment() {
             {doctor?.firstName} {doctor?.lastName}
           </b>
         </h1>
+
+        <div className="my-2">
+          <div style={{ textAlign: 'left', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Rate disabled value={calculateAverageRating(doctor)} />
+              <span style={{ marginLeft: '0.5rem' }}>
+                {calculateAverageRating(doctor).toFixed(1)}
+              </span>
+            </div>
+            <div>
+              <small>{doctor.ratingCount || 0} review{doctor.ratingCount !== 1 ? 's' : ''}</small>
+            </div>
+          </div>
+        </div>
 
         <hr />
 
