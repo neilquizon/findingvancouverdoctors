@@ -185,23 +185,33 @@ function BookAppointment() {
   return (
     doctor && (
       <div className="bg-white p-2">
-        <h1 className="uppercase my-1">
+        {/* Doctor's Profile Picture - Centered */}
+        {doctor.profilePic && (
+          <div className="my-2" style={{ textAlign: 'center' }}>
+            <img
+              src={doctor.profilePic}
+              alt={`${doctor.firstName} ${doctor.lastName}`}
+              style={{ width: "150px", height: "150px", borderRadius: "50%" }}
+            />
+          </div>
+        )}
+
+        <h1 className="uppercase my-1" style={{ textAlign: 'center' }}>
           <b>
             {doctor?.firstName} {doctor?.lastName}
           </b>
         </h1>
 
-        <div className="my-2">
-          <div style={{ textAlign: 'left', width: '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Rate disabled value={calculateAverageRating(doctor)} />
-              <span style={{ marginLeft: '0.5rem' }}>
-                {calculateAverageRating(doctor).toFixed(1)}
-              </span>
-            </div>
-            <div>
-              <small>{doctor.ratingCount || 0} review{doctor.ratingCount !== 1 ? 's' : ''}</small>
-            </div>
+        {/* Doctor's Ratings - Centered */}
+        <div className="my-2" style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Rate disabled value={calculateAverageRating(doctor)} />
+            <span style={{ marginLeft: '0.5rem' }}>
+              {calculateAverageRating(doctor).toFixed(1)}
+            </span>
+          </div>
+          <div>
+            <small>{doctor.ratingCount || 0} review{doctor.ratingCount !== 1 ? 's' : ''}</small>
           </div>
         </div>
 

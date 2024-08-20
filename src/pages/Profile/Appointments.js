@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
 import { Table, message, Modal, Select, Input, Button } from 'antd';
@@ -20,7 +20,7 @@ function Appointments() {
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
 
-  const getData = async () => {
+  const getData = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
       let response;
@@ -49,7 +49,11 @@ function Appointments() {
       dispatch(ShowLoader(false));
       message.error(error.message);
     }
-  };
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    getData();
+  }, [getData]);
 
   const sendEmailNotification = (email, subject, text) => {
     const templateParams = {
@@ -209,10 +213,6 @@ function Appointments() {
     }
   };
 
-  useEffect(() => {
-    getData();
-  }, []);
-
   const showConfirm = (id, isDoctor, navigateToBookAppointment, action) => {
     const title = action === "reschedule" 
       ? 'Are you sure you want to reschedule this appointment? This will delete the current appointment and cannot be undone.'
@@ -269,7 +269,7 @@ function Appointments() {
       dataIndex: 'rateDoctor',
       key: 'rateDoctor',
       render: (text, record) => {
-        if (user.role !== "doctor" && !ratedAppointments.has(record.id)) {
+        if (user.role !== "doctor" && record.status === 'completed' && !ratedAppointments.has(record.id)) {
           return (
             <div>
               <Select
@@ -288,7 +288,7 @@ function Appointments() {
             </div>
           );
         }
-        return 'Rated';
+        return record.status === 'completed' ? 'Rated' : 'Not Completed';
       }
     }
   ];
