@@ -2,15 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
 import { Table, message, Modal, Select, Input, Button } from 'antd';
-import {
-  GetDoctorAppointments,
-  GetUserAppointments,
-  UpdateAppointmentStatus,
-  DeleteAppointment,
-  SaveDoctorNotes,
-  SubmitRating, // Import the SubmitRating function
-} from '../../apicalls/appointments';
-import sendEmail from '../../services/emailService'; 
+import { GetDoctorAppointments, GetUserAppointments, UpdateAppointmentStatus, DeleteAppointment, SaveDoctorNotes, SubmitRating } from '../../apicalls/appointments';
+import emailjs from 'emailjs-com';  // Import emailjs
 import './Appointments.css'; 
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
@@ -58,20 +51,42 @@ function Appointments() {
     }
   };
 
+  const sendEmailNotification = (email, subject, text) => {
+    const templateParams = {
+      to_email: email,
+      subject,
+      message: text,
+    };
+
+    emailjs.send('service_7rqzzbn', 'template_izpot6c', templateParams, 'MfjeugCZV3OLQrm7O')
+      .then((response) => {
+        console.log('Email sent successfully:', response.status, response.text);
+      })
+      .catch((error) => {
+        console.error('Failed to send email:', error);
+      });
+  };
+
   const onUpdate = async (id, status) => {
     try {
       dispatch(ShowLoader(true));
       const appointment = appointments.find(app => app.id === id);
       const userEmail = appointment.userEmail || appointment.user?.email; 
+      const doctorEmail = appointment.doctorEmail || appointment.doctor?.email;
       const response = await UpdateAppointmentStatus(id, status);
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success(response.message);
 
+        const emailSubject = `Appointment Status Updated to "${status}"`;
+        const emailTextUser = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been updated to "${status}".\n\nThank you.`;
+        const emailTextDoctor = `Dear Dr. ${appointment.doctorName},\n\nThe appointment with ${appointment.userName} on ${appointment.date} at ${appointment.slot} has been updated to "${status}".\n\nThank you.`;
+
         if (userEmail) {
-          const emailSubject = `Your Appointment Status Has Been Updated to "${status}"`;
-          const emailText = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been updated to "${status}".\n\nThank you.`;
-          await sendEmail(userEmail, emailSubject, emailText);
+          sendEmailNotification(userEmail, emailSubject, emailTextUser);
+        }
+        if (doctorEmail) {
+          sendEmailNotification(doctorEmail, emailSubject, emailTextDoctor);
         }
 
         getData();
@@ -84,7 +99,7 @@ function Appointments() {
     }
   };
 
-  const onDelete = async (id, navigateToBookAppointment) => {
+  const onDelete = async (id, navigateToBookAppointment, action) => {
     try {
       dispatch(ShowLoader(true));
       const appointment = appointments.find(app => app.id === id);
@@ -96,14 +111,15 @@ function Appointments() {
       if (response.success) {
         message.success(response.message);
 
-        const emailSubject = 'Appointment Cancellation Notice';
-        const emailText = `The appointment on ${appointment.date} at ${appointment.slot} has been cancelled.`;
+        const emailSubject = action === "reschedule" ? 'Appointment Reschedule Notice' : 'Appointment Cancellation Notice';
+        const emailTextUser = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been ${action === "reschedule" ? 'rescheduled' : 'cancelled'}.`;
+        const emailTextDoctor = `Dear Dr. ${appointment.doctorName},\n\nThe appointment with ${appointment.userName} on ${appointment.date} at ${appointment.slot} has been ${action === "reschedule" ? 'rescheduled' : 'cancelled'}.`;
 
         if (doctorEmail) {
-          await sendEmail(doctorEmail, emailSubject, emailText);
+          sendEmailNotification(doctorEmail, emailSubject, emailTextDoctor);
         }
         if (userEmail) {
-          await sendEmail(userEmail, emailSubject, emailText);
+          sendEmailNotification(userEmail, emailSubject, emailTextUser);
         }
 
         if (navigateToBookAppointment) {
@@ -135,12 +151,20 @@ function Appointments() {
       if (response.success) {
         message.success('Notes saved successfully');
 
-        // Send an email notification to the user when notes are updated
         const appointment = appointments.find(app => app.id === appointmentId);
-        if (appointment.userEmail) {
+        const userEmail = appointment.userEmail || appointment.user?.email;
+        const doctorEmail = appointment.doctorEmail || appointment.doctor?.email;
+
+        if (userEmail) {
           const emailSubject = `Your Appointment Notes Have Been Updated`;
-          const emailText = `Dear ${appointment.userName},\n\nDr. ${appointment.doctorName} has updated the notes for your appointment on ${appointment.date} at ${appointment.slot}.\n\nNew Notes: ${notes[appointmentId]}\n\nThank you.`;
-          await sendEmail(appointment.userEmail, emailSubject, emailText);
+          const emailTextUser = `Dear ${appointment.userName},\n\nDr. ${appointment.doctorName} has updated the notes for your appointment on ${appointment.date} at ${appointment.slot}.\n\nNew Notes: ${notes[appointmentId]}\n\nThank you.`;
+          sendEmailNotification(userEmail, emailSubject, emailTextUser);
+        }
+
+        if (doctorEmail) {
+          const emailSubject = `Appointment Notes Have Been Updated`;
+          const emailTextDoctor = `Dear Dr. ${appointment.doctorName},\n\nThe notes for your appointment with ${appointment.userName} on ${appointment.date} at ${appointment.slot} have been updated.\n\nNew Notes: ${notes[appointmentId]}\n\nThank you.`;
+          sendEmailNotification(doctorEmail, emailSubject, emailTextDoctor);
         }
 
         getData();
@@ -189,8 +213,8 @@ function Appointments() {
     getData();
   }, []);
 
-  const showConfirm = (id, isDoctor, navigateToBookAppointment) => {
-    const title = navigateToBookAppointment 
+  const showConfirm = (id, isDoctor, navigateToBookAppointment, action) => {
+    const title = action === "reschedule" 
       ? 'Are you sure you want to reschedule this appointment? This will delete the current appointment and cannot be undone.'
       : 'Are you sure you want to cancel this appointment?';
 
@@ -200,7 +224,7 @@ function Appointments() {
         if (isDoctor) {
           onUpdate(id, "cancelled");
         } else {
-          onDelete(id, navigateToBookAppointment);
+          onDelete(id, navigateToBookAppointment, action);
         }
       }
     });
@@ -317,7 +341,7 @@ function Appointments() {
             </span>
             <span
               style={{ textDecoration: 'underline', cursor: 'pointer' }}
-              onClick={() => showConfirm(record.id, false, record.doctorId)}
+              onClick={() => showConfirm(record.id, false, record.doctorId, 'reschedule')}
             >
               Reschedule
             </span>

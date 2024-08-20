@@ -5,11 +5,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { GetDoctorById } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
 import moment from "moment";
-import {
-  BookDoctorAppointment,
-  GetDoctorAppointmentsOnDate,
-} from "../../apicalls/appointments";
-import sendEmail from "../../services/emailService"; // Import the sendEmail function
+import { BookDoctorAppointment, GetDoctorAppointmentsOnDate } from "../../apicalls/appointments";
+import emailjs from "emailjs-com"; // Import emailjs
 
 function BookAppointment() {
   const [problem, setProblem] = useState("");
@@ -30,7 +27,6 @@ function BookAppointment() {
       } else {
         message.error(response.message);
       }
-
       dispatch(ShowLoader(false));
     } catch (error) {
       message.error(error.message);
@@ -41,9 +37,7 @@ function BookAppointment() {
   const getSlotsData = () => {
     const day = moment(date).format("dddd");
     if (!doctor.days.includes(day)) {
-      return (
-        <h3>Doctor is not available on {moment(date).format("DD-MM-YYYY")}</h3>
-      );
+      return <h3>Doctor is not available on {moment(date).format("DD-MM-YYYY")}</h3>;
     }
 
     let startTime = moment(doctor.startTime, "HH:mm");
@@ -61,8 +55,7 @@ function BookAppointment() {
             <tr>
               {slots.map((slot) => {
                 const isBooked = bookedSlots?.find(
-                  (bookedSlot) =>
-                    bookedSlot.slot === slot && bookedSlot.status !== "cancelled"
+                  (bookedSlot) => bookedSlot.slot === slot && bookedSlot.status !== "cancelled"
                 );
                 return (
                   <td key={slot} className="p-2">
@@ -75,7 +68,7 @@ function BookAppointment() {
                         pointerEvents: isBooked ? "none" : "auto",
                         cursor: isBooked ? "not-allowed" : "pointer",
                         minWidth: "120px",
-                        textAlign: "center"
+                        textAlign: "center",
                       }}
                     >
                       <span style={{ fontSize: "14px" }}>
@@ -91,6 +84,22 @@ function BookAppointment() {
         </table>
       </div>
     );
+  };
+
+  const sendEmailNotification = (email, subject, text) => {
+    const templateParams = {
+      to_email: email,
+      subject,
+      message: text,
+    };
+
+    emailjs.send('service_7rqzzbn', 'template_izpot6c', templateParams, 'MfjeugCZV3OLQrm7O')
+      .then((response) => {
+        console.log('Email sent successfully:', response.status, response.text);
+      })
+      .catch((error) => {
+        console.error('Failed to send email:', error);
+      });
   };
 
   const onBookAppointment = async () => {
@@ -116,13 +125,13 @@ function BookAppointment() {
         const emailText = `Dear ${user.name},\n\nYour appointment with Dr. ${doctor.firstName} ${doctor.lastName} on ${date} at ${selectedSlot} has been successfully booked.`;
         
         // Send email to the user
-        await sendEmail(user.email, emailSubject, emailText);
+        sendEmailNotification(user.email, emailSubject, emailText);
 
         // Send email to the doctor
         const doctorEmailSubject = "New Appointment Booked";
         const doctorEmailText = `Dear Dr. ${doctor.firstName} ${doctor.lastName},\n\nYou have a new appointment with ${user.name} on ${date} at ${selectedSlot}.\n\nProblem: ${problem}`;
         
-        await sendEmail(doctor.email, doctorEmailSubject, doctorEmailText);
+        sendEmailNotification(doctor.email, doctorEmailSubject, doctorEmailText);
 
         message.success(response.message);
         navigate("/profile");
