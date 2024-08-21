@@ -1,21 +1,20 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { Table, message, Modal, Select, Input } from "antd";
+import { Table, message, Modal, Select, Input, Button } from "antd";
 import { ShowLoader } from "../../redux/loaderSlice";
 import {
   GetAppointments,
   DeleteAppointment,
-  UpdateAppointmentStatus,
   SaveDoctorNotes,
   UpdateProblem,
+  UpdateAppointmentStatus,
 } from "../../apicalls/appointments";
-import sendEmail from "../../services/emailService"; // Import the sendEmail function
+import sendEmail from "../../services/emailService";
 import moment from "moment";
 
 const { Option } = Select;
 const { TextArea } = Input;
 
-// Footer Component
 const Footer = () => (
   <footer
     style={{
@@ -33,22 +32,26 @@ const Footer = () => (
 );
 
 function AppointmentsList() {
-  const [appointments, setAppointments] = React.useState([]);
-  const [notes, setNotes] = React.useState({});
-  const [problems, setProblems] = React.useState({});
+  const [appointments, setAppointments] = useState([]);
+  const [filteredAppointments, setFilteredAppointments] = useState([]);
+  const [filterType, setFilterType] = useState(null);
+  const [filterValue, setFilterValue] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [notes, setNotes] = useState({});
+  const [problems, setProblems] = useState({});
   const dispatch = useDispatch();
   const user = JSON.parse(localStorage.getItem("user"));
+  const printRef = useRef();
 
-  const getData = async () => {
+  const getData = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
       const response = await GetAppointments();
       dispatch(ShowLoader(false));
       if (response.success) {
-        // Sort appointments by date before setting them
-        const sortedAppointments = response.data.sort((a, b) => {
-          return moment(a.date).diff(moment(b.date));
-        });
+        const sortedAppointments = response.data.sort((a, b) =>
+          moment(a.date).unix() - moment(b.date).unix()
+        );
         setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
@@ -57,6 +60,59 @@ function AppointmentsList() {
       dispatch(ShowLoader(false));
       message.error(error.message);
     }
+  }, [dispatch]);
+
+  useEffect(() => {
+    getData();
+  }, [getData]);
+
+  const handleFilterChange = (value) => {
+    setFilterType(value);
+    setFilterValue(null);
+  };
+
+  const handleFilterValueChange = (e) => {
+    setFilterValue(e.target.value);
+  };
+
+  const handleDateFilterChange = (e) => {
+    setFilterValue(e.target.value);
+  };
+
+  const handleSearch = () => {
+    let filtered = appointments;
+
+    if (filterType && filterValue) {
+      filtered = appointments.filter((appointment) => {
+        if (filterType === "Patients") {
+          return appointment.userName.toLowerCase().includes(filterValue.toLowerCase());
+        }
+        if (filterType === "Doctors") {
+          return appointment.doctorName.toLowerCase().includes(filterValue.toLowerCase());
+        }
+        if (filterType === "Appointment Date") {
+          return moment(appointment.date).isSame(filterValue, "day");
+        }
+        if (filterType === "Status") {
+          return appointment.status.toLowerCase().includes(filterValue.toLowerCase());
+        }
+        return true;
+      });
+    }
+
+    setFilteredAppointments(filtered);
+    setIsModalVisible(true);
+  };
+
+  const handlePrint = () => {
+    const printContent = printRef.current.innerHTML;
+    const printWindow = window.open("", "", "height=600,width=800");
+    printWindow.document.write("<html><head><title>Appointments Report</title>");
+    printWindow.document.write("</head><body >");
+    printWindow.document.write(printContent);
+    printWindow.document.write("</body></html>");
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const confirmDelete = (id) => {
@@ -70,7 +126,7 @@ function AppointmentsList() {
     try {
       dispatch(ShowLoader(true));
       const appointment = appointments.find((app) => app.id === id);
-      const doctorEmail = appointment.doctorEmail; // Replace with actual doctor email from appointment data
+      const doctorEmail = appointment.doctorEmail;
       const userEmail = appointment.userEmail || user.email;
 
       const response = await DeleteAppointment(id);
@@ -78,31 +134,12 @@ function AppointmentsList() {
       if (response.success) {
         message.success(response.message);
 
-        // Send email notifications to the doctor and the user
         const emailSubject = "Appointment Deletion Notice";
         const emailText = `The appointment on ${appointment.date} at ${appointment.slot} has been deleted.`;
 
-        // Sending emails to both doctor and user
         await sendEmail(doctorEmail, emailSubject, emailText);
         await sendEmail(userEmail, emailSubject, emailText);
 
-        getData();
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error) {
-      dispatch(ShowLoader(false));
-      message.error(error.message);
-    }
-  };
-
-  const onUpdate = async (id, status) => {
-    try {
-      dispatch(ShowLoader(true));
-      const response = await UpdateAppointmentStatus(id, status);
-      dispatch(ShowLoader(false));
-      if (response.success) {
-        message.success(response.message);
         getData();
       } else {
         throw new Error(response.message);
@@ -161,12 +198,21 @@ function AppointmentsList() {
     }
   };
 
-  useEffect(() => {
-    getData();
-  }, []);
-
-  const handleChangeStatus = (id, value) => {
-    onUpdate(id, value);
+  const onUpdate = async (id, status) => {
+    try {
+      dispatch(ShowLoader(true));
+      const response = await UpdateAppointmentStatus(id, status);
+      dispatch(ShowLoader(false));
+      if (response.success) {
+        message.success(response.message);
+        getData();
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      dispatch(ShowLoader(false));
+      message.error(error.message);
+    }
   };
 
   const columns = [
@@ -175,99 +221,143 @@ function AppointmentsList() {
     { title: "Doctor", dataIndex: "doctorName", key: "doctorName" },
     { title: "Patient", dataIndex: "userName", key: "userName" },
     { title: "Booked On", dataIndex: "bookedOn", key: "bookedOn" },
-    {
-      title: "Problem",
-      dataIndex: "problem",
-      key: "problem",
-      render: (text, record) => {
-        if (user.role === "admin") {
-          return (
-            <div>
-              <TextArea
-                rows={2}
-                value={problems[record.id] || record.problem}
-                onChange={(e) => handleProblemChange(record.id, e.target.value)}
-              />
-              <button onClick={() => saveProblem(record.id)}>Save</button>
-            </div>
-          );
-        } else {
-          return <div>{record.problem || "No problem specified"}</div>;
-        }
-      },
-    },
+    { title: "Problem", dataIndex: "problem", key: "problem" },
     { title: "Status", dataIndex: "status", key: "status" },
     {
       title: "Doctor's Notes",
       dataIndex: "notes",
       key: "notes",
-      render: (text, record) => {
-        if (user.role === "doctor" || user.role === "admin") {
-          return (
-            <div>
-              <TextArea
-                rows={4}
-                value={notes[record.id] || record.notes}
-                onChange={(e) => handleNotesChange(record.id, e.target.value)}
-              />
-              <button onClick={() => saveNotes(record.id)}>Save</button>
-            </div>
-          );
-        } else {
-          return <div>{record.notes || "No notes available"}</div>;
-        }
-      },
     },
-  ];
-
-  if (user.role === "doctor" || user.role === "admin") {
-    columns.push({
+    {
       title: "Action",
       dataIndex: "action",
       key: "action",
-      render: (text, record) => {
-        const isPastDate = moment(record.date).isBefore(moment(), "day");
-        if (user.role === "admin" || !isPastDate) {
-          return (
-            <div
-              style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-            >
-              <Select
-                value={record.status}
-                onChange={(value) => handleChangeStatus(record.id, value)}
-                style={{ width: 120 }}
-              >
-                <Option value="pending">Pending</Option>
-                <Option value="approved">Approved</Option>
-                <Option value="cancelled">Cancelled</Option>
-                <Option value="completed">Completed</Option>
-                <Option value="no show">No Show</Option>
-                <Option value="in progress">In Progress</Option>
-              </Select>
-              <span
-                style={{ textDecoration: "underline", cursor: "pointer" }}
-                onClick={() => confirmDelete(record.id)}
-              >
-                Delete
-              </span>
-            </div>
-          );
-        }
-        return null;
-      },
-    });
-  }
+      render: (text, record) => (
+        <div
+          style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
+        >
+          <Select
+            value={record.status}
+            onChange={(value) => onUpdate(record.id, value)}
+            style={{ width: 120 }}
+          >
+            <Option value="pending">Pending</Option>
+            <Option value="approved">Approved</Option>
+            <Option value="cancelled">Cancelled</Option>
+            <Option value="completed">Completed</Option>
+            <Option value="no show">No Show</Option>
+            <Option value="in progress">In Progress</Option>
+          </Select>
+          <span
+            style={{ textDecoration: "underline", cursor: "pointer" }}
+            onClick={() => confirmDelete(record.id)}
+          >
+            Delete
+          </span>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="table-container">
+      {/* Filter Section */}
+      <div style={{ marginBottom: 16 }}>
+        <Select
+          style={{ width: 200, marginRight: 16 }}
+          placeholder="Select Filter"
+          onChange={handleFilterChange}
+        >
+          <Option value="Patients">Patients</Option>
+          <Option value="Doctors">Doctors</Option>
+          <Option value="Appointment Date">Appointment Date</Option>
+          <Option value="Status">Status</Option>
+        </Select>
+
+        {filterType === "Patients" && (
+          <Input
+            placeholder="Enter Patient's Name"
+            value={filterValue}
+            onChange={handleFilterValueChange}
+            style={{ width: 200 }}
+          />
+        )}
+
+        {filterType === "Doctors" && (
+          <Input
+            placeholder="Enter Doctor's Name"
+            value={filterValue}
+            onChange={handleFilterValueChange}
+            style={{ width: 200 }}
+          />
+        )}
+
+        {filterType === "Appointment Date" && (
+          <Input
+            type="date"
+            value={filterValue}
+            onChange={handleDateFilterChange}
+            style={{ width: 200 }}
+          />
+        )}
+
+        {filterType === "Status" && (
+          <Input
+            placeholder="Enter Status"
+            value={filterValue}
+            onChange={handleFilterValueChange}
+            style={{ width: 200 }}
+          />
+        )}
+
+        <Button
+          type="primary"
+          onClick={handleSearch}
+          style={{ backgroundColor: "white", color: "#004182", borderColor: "#004182" }}
+        >
+          Search
+        </Button>
+      </div>
+
       <Table
         columns={columns}
         dataSource={appointments}
         pagination={false}
         rowKey="id"
-        scroll={{ x: 600 }} // Enable horizontal scrolling on smaller screens
+        scroll={{ x: 600 }}
       />
-      <Footer /> {/* Insert the Footer component here */}
+
+      {/* Modal for displaying filtered results */}
+      <Modal
+        title="Filtered Appointments"
+        visible={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={[
+          <Button
+            key="print"
+            onClick={handlePrint}
+            style={{
+              backgroundColor: "white",
+              color: "#004182",
+              borderColor: "#004182",
+            }}
+          >
+            Print
+          </Button>,
+        ]}
+      >
+        <div ref={printRef}>
+          <Table
+            columns={columns.filter((col) => col.key !== "action")}
+            dataSource={filteredAppointments}
+            pagination={false}
+            rowKey="id"
+            scroll={{ x: 600 }}
+          />
+        </div>
+      </Modal>
+
+      <Footer />
     </div>
   );
 }

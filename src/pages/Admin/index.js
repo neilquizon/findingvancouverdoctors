@@ -38,15 +38,16 @@ function Admin() {
     isAdmin && (
       <div className="bg-white p-1">
         <Tabs>
-          <Tabs.TabPane tab="Users" key="1">
-            <UsersList />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="Doctors" key="2">
-            <DoctorsList />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="Appointments" key="3">
+        <Tabs.TabPane tab="Appointments" key="1">
             <AppointmentsList />
           </Tabs.TabPane>
+          <Tabs.TabPane tab="Users" key="2">
+            <UsersList />
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="Doctors" key="3">
+            <DoctorsList />
+          </Tabs.TabPane>
+          
         </Tabs>
       </div>
     )
