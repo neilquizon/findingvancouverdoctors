@@ -19,6 +19,7 @@ function Appointments() {
   const [filterValue, setFilterValue] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [notes, setNotes] = useState({});
+  const [problems, setProblems] = useState({});
   const [ratedAppointments, setRatedAppointments] = useState(new Set());
   const [rating, setRating] = useState({});
   const dispatch = useDispatch();
@@ -205,6 +206,13 @@ function Appointments() {
     }));
   };
 
+  const handleProblemChange = (appointmentId, value) => {
+    setProblems(prevProblems => ({
+      ...prevProblems,
+      [appointmentId]: value,
+    }));
+  };
+
   const saveNotes = async (appointmentId, isModal) => {
     if (isModal) return;
 
@@ -215,6 +223,25 @@ function Appointments() {
       if (response.success) {
         message.success('Notes saved successfully');
         getData(); // Reload the data to reflect the saved notes
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      dispatch(ShowLoader(false));
+      message.error(error.message);
+    }
+  };
+
+  const saveProblem = async (appointmentId, isModal) => {
+    if (isModal) return;
+
+    try {
+      dispatch(ShowLoader(true));
+      const response = await SaveDoctorNotes(appointmentId, problems[appointmentId]); // Assuming you're using the same API endpoint
+      dispatch(ShowLoader(false));
+      if (response.success) {
+        message.success('Problem saved successfully');
+        getData(); // Reload the data to reflect the saved problem
       } else {
         throw new Error(response.message);
       }
@@ -247,12 +274,9 @@ function Appointments() {
       const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating);
       
       if (response.success) {
-        // Update status to "Rated"
-        await UpdateAppointmentStatus(appointmentId, "Rated");
-        
-        // Update the local state immediately to reflect the change
+        // Update the local state to reflect the rating submission
         const updatedAppointments = appointments.map(app => 
-          app.id === appointmentId ? { ...app, status: "Rated", rating: selectedRating } : app
+          app.id === appointmentId ? { ...app, rating: selectedRating } : app
         );
 
         setAppointments(updatedAppointments);
@@ -335,16 +359,92 @@ function Appointments() {
     const isModal = isModalVisible;
     return (
       <div>
-        <TextArea
-          rows={4}
-          value={notes[record.id] || record.notes || ""}
-          onChange={(e) => handleNotesChange(record.id, e.target.value)}
-        />
-        {!isModal && (
-          <button onClick={() => saveNotes(record.id, isModal)}>Save</button>
+        {user.role === "doctor" ? (
+          <>
+            <TextArea
+              rows={4}
+              value={notes[record.id] || record.notes || ""}
+              onChange={(e) => handleNotesChange(record.id, e.target.value)}
+            />
+            {!isModal && (
+              <button onClick={() => saveNotes(record.id, isModal)}>Save</button>
+            )}
+          </>
+        ) : (
+          <div>{record.notes || "Not Available"}</div>
         )}
       </div>
     );
+  };
+
+  const renderProblemColumn = (text, record) => {
+    const isPastDate = moment(record.date).isBefore(moment(), 'day');
+    return (
+      <div>
+        {user.role === "user" && !isPastDate ? (
+          <>
+            <TextArea
+              rows={2}
+              value={problems[record.id] || record.problem || ""}
+              onChange={(e) => handleProblemChange(record.id, e.target.value)}
+            />
+            <button onClick={() => saveProblem(record.id, isModalVisible)}>Save</button>
+          </>
+        ) : (
+          <div>{record.problem || "No Problem specified"}</div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStatusColumn = (text, record) => {
+    const isPastDate = moment(record.date).isBefore(moment(), 'day');
+    return (
+      <div>
+        {user.role === "doctor" && !isPastDate ? (
+          <Select
+            value={record.status}
+            onChange={(value) => handleChangeStatus(record.id, value)}
+            style={{ width: 120 }}
+          >
+            <Option value="pending">Pending</Option>
+            <Option value="approved">Approved</Option>
+            <Option value="cancelled">Cancelled</Option>
+            <Option value="completed">Completed</Option>
+            <Option value="no show">No Show</Option>
+            <Option value="in progress">In Progress</Option>
+          </Select>
+        ) : (
+          <div>{record.status}</div>
+        )}
+      </div>
+    );
+  };
+
+  const renderRateDoctorColumn = (text, record) => {
+    const isModal = isModalVisible;
+    if (user.role !== "doctor" && !ratedAppointments.has(record.id)) {
+      return (
+        <div>
+          <Select
+            style={{ width: 120 }}
+            value={rating[record.id]}
+            onChange={(value) => handleRatingChange(record.id, value)}
+            placeholder="Rate"
+          >
+            {[1, 2, 3, 4, 5].map(star => (
+              <Option key={star} value={star}>{`${star} Star${star > 1 ? 's' : ''}`}</Option>
+            ))}
+          </Select>
+          {!isModal && (
+            <Button type="primary" onClick={() => submitRating(record.id, isModal)}>
+              Submit Rating
+            </Button>
+          )}
+        </div>
+      );
+    }
+    return 'Rated';
   };
 
   const columns = [
@@ -387,51 +487,25 @@ function Appointments() {
       title: 'Problem',
       dataIndex: 'problem',
       key: 'problem',
-      sorter: (a, b) => a.problem.localeCompare(b.problem),
-      ...getColumnSearchProps("problem"),
+      render: renderProblemColumn, // Custom render function for editing based on role and date
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      sorter: (a, b) => a.status.localeCompare(b.status),
-      ...getColumnSearchProps("status"),
+      render: renderStatusColumn, // Custom render function for status
     },
     {
-      title: 'Doctor\'s Notes',
+      title: "Doctor's Notes",
       dataIndex: 'notes',
       key: 'notes',
-      render: renderNotesColumn
+      render: renderNotesColumn, // Custom render function for conditionally editing
     },
     {
       title: 'Rate Doctor',
       dataIndex: 'rateDoctor',
       key: 'rateDoctor',
-      render: (text, record) => {
-        const isModal = isModalVisible;
-        if (user.role !== "doctor" && !ratedAppointments.has(record.id)) {
-          return (
-            <div>
-              <Select
-                style={{ width: 120 }}
-                value={rating[record.id]}
-                onChange={(value) => handleRatingChange(record.id, value)}
-                placeholder="Rate"
-              >
-                {[1, 2, 3, 4, 5].map(star => (
-                  <Option key={star} value={star}>{`${star} Star${star > 1 ? 's' : ''}`}</Option>
-                ))}
-              </Select>
-              {!isModal && (
-                <Button type="primary" onClick={() => submitRating(record.id, isModal)}>
-                  Submit Rating
-                </Button>
-              )}
-            </div>
-          );
-        }
-        return 'Rated';
-      }
+      render: renderRateDoctorColumn, // Custom render function for rating
     }
   ];
 

@@ -188,7 +188,7 @@ export const SubmitRating = async (doctorId, userId, rating) => {
       // Update the rating in the appointment document
       await updateDoc(doc(firestoreDatabase, "appointments", appointmentDoc.id), {
         rating: rating,
-        status: "Rated",  // Update the status to "Rated"
+        // Removed the status update here
       });
 
       // Optionally, update the doctor's average rating
