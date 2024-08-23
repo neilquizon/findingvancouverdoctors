@@ -3,10 +3,11 @@ import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
 import { Table, message, Modal, Select, Input, Button } from 'antd';
 import { GetDoctorAppointments, GetUserAppointments, UpdateAppointmentStatus, DeleteAppointment, SaveDoctorNotes, SubmitRating } from '../../apicalls/appointments';
-import emailjs from 'emailjs-com';  // Import emailjs
-import './Appointments.css'; 
+import emailjs from 'emailjs-com';
+import './Appointments.css';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
+import { SearchOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -23,7 +24,7 @@ function Appointments() {
   const dispatch = useDispatch();
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
-  const printRef = useRef(); // Reference for the printable content
+  const printRef = useRef();
 
   const getData = useCallback(async () => {
     try {
@@ -205,7 +206,7 @@ function Appointments() {
   };
 
   const saveNotes = async (appointmentId, isModal) => {
-    if (isModal) return; // Skip saving if this is the modal view
+    if (isModal) return;
 
     try {
       dispatch(ShowLoader(true));
@@ -231,7 +232,7 @@ function Appointments() {
   };
 
   const submitRating = async (appointmentId, isModal) => {
-    if (isModal) return; // Skip rating submission if this is the modal view
+    if (isModal) return;
 
     try {
       const selectedRating = rating[appointmentId];
@@ -278,15 +279,116 @@ function Appointments() {
     onUpdate(id, value);
   };
 
+  const getColumnSearchProps = (dataIndex) => ({
+    filterDropdown: ({
+      setSelectedKeys,
+      selectedKeys,
+      confirm,
+      clearFilters,
+    }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={(e) =>
+            setSelectedKeys(e.target.value ? [e.target.value] : [])
+          }
+          onPressEnter={() => confirm()}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Button
+          type="primary"
+          onClick={() => confirm()}
+          icon={<SearchOutlined />}
+          size="small"
+          style={{ width: 90, marginRight: 8 }}
+        >
+          Search
+        </Button>
+        <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+          Reset
+        </Button>
+      </div>
+    ),
+    filterIcon: (filtered) => (
+      <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
+    ),
+    onFilter: (value, record) =>
+      record[dataIndex]
+        .toString()
+        .toLowerCase()
+        .includes(value.toLowerCase()),
+  });
+
   const columns = [
-    { title: 'Date', dataIndex: 'date', key: 'date' },
-    { title: 'Time', dataIndex: 'slot', key: 'slot' },
-    { title: 'Doctor', dataIndex: 'doctorName', key: 'doctorName', hidden: user.role === 'doctor' },
-    { title: 'Patient', dataIndex: 'userName', key: 'userName', hidden: user.role === 'user' },
-    { title: 'Email', dataIndex: 'userEmail', key: 'userEmail' },
-    { title: 'Booked On', dataIndex: 'bookedOn', key: 'bookedOn' },
-    { title: 'Problem', dataIndex: 'problem', key: 'problem' },
-    { title: 'Status', dataIndex: 'status', key: 'status' },
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      sorter: (a, b) => moment(a.date).unix() - moment(b.date).unix(),
+      ...getColumnSearchProps("date"),
+    },
+    {
+      title: 'Time',
+      dataIndex: 'slot',
+      key: 'slot',
+      sorter: (a, b) => a.slot.localeCompare(b.slot),
+      ...getColumnSearchProps("slot"),
+    },
+    {
+      title: 'Doctor',
+      dataIndex: 'doctorName',
+      key: 'doctorName',
+      sorter: (a, b) => a.doctorName.localeCompare(b.doctorName),
+      ...getColumnSearchProps("doctorName"),
+    },
+    {
+      title: 'Patient',
+      dataIndex: 'userName',
+      key: 'userName',
+      sorter: (a, b) => a.userName.localeCompare(b.userName),
+      ...getColumnSearchProps("userName"),
+    },
+    {
+      title: 'Booked On',
+      dataIndex: 'bookedOn',
+      key: 'bookedOn',
+      sorter: (a, b) => moment(a.bookedOn).unix() - moment(b.bookedOn).unix(),
+      ...getColumnSearchProps("bookedOn"),
+    },
+    {
+      title: 'Problem',
+      dataIndex: 'problem',
+      key: 'problem',
+      sorter: (a, b) => a.problem.localeCompare(b.problem),
+      render: (text, record) => {
+        const isModal = isModalVisible;
+        if (user.role === "doctor") {
+          return (
+            <div>
+              <TextArea
+                rows={4}
+                value={notes[record.id] || record.notes}
+                onChange={(e) => handleNotesChange(record.id, e.target.value)}
+              />
+              {!isModal && (
+                <button onClick={() => saveNotes(record.id, isModal)}>Save</button>
+              )}
+            </div>
+          );
+        } else {
+          return <div>{record.notes || "No notes available"}</div>;
+        }
+      },
+      ...getColumnSearchProps("problem"),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      sorter: (a, b) => a.status.localeCompare(b.status),
+      ...getColumnSearchProps("status"),
+    },
     {
       title: 'Doctor\'s Notes',
       dataIndex: 'notes',
@@ -303,7 +405,7 @@ function Appointments() {
               />
               {!isModal && (
                 <button onClick={() => saveNotes(record.id, isModal)}>Save</button>
-              )} {/* Save button only shown if not in modal */}
+              )}
             </div>
           );
         } else {

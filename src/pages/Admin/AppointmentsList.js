@@ -1,19 +1,19 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { Table, message, Modal, Select, Input, Button } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { ShowLoader } from "../../redux/loaderSlice";
 import {
   GetAppointments,
   DeleteAppointment,
+  UpdateAppointmentStatus,
   SaveDoctorNotes,
   UpdateProblem,
-  UpdateAppointmentStatus,
 } from "../../apicalls/appointments";
 import sendEmail from "../../services/emailService";
 import moment from "moment";
 
 const { Option } = Select;
-const { TextArea } = Input;
 
 const Footer = () => (
   <footer
@@ -37,8 +37,9 @@ function AppointmentsList() {
   const [filterType, setFilterType] = useState(null);
   const [filterValue, setFilterValue] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [notes, setNotes] = useState({});
-  const [problems, setProblems] = useState({});
+  const [editingId, setEditingId] = useState(null);
+  const [editedNotes, setEditedNotes] = useState("");
+  const [editedProblem, setEditedProblem] = useState("");
   const dispatch = useDispatch();
   const user = JSON.parse(localStorage.getItem("user"));
   const printRef = useRef();
@@ -85,16 +86,22 @@ function AppointmentsList() {
     if (filterType && filterValue) {
       filtered = appointments.filter((appointment) => {
         if (filterType === "Patients") {
-          return appointment.userName.toLowerCase().includes(filterValue.toLowerCase());
+          return appointment.userName
+            .toLowerCase()
+            .includes(filterValue.toLowerCase());
         }
         if (filterType === "Doctors") {
-          return appointment.doctorName.toLowerCase().includes(filterValue.toLowerCase());
+          return appointment.doctorName
+            .toLowerCase()
+            .includes(filterValue.toLowerCase());
         }
         if (filterType === "Appointment Date") {
           return moment(appointment.date).isSame(filterValue, "day");
         }
         if (filterType === "Status") {
-          return appointment.status.toLowerCase().includes(filterValue.toLowerCase());
+          return appointment.status
+            .toLowerCase()
+            .includes(filterValue.toLowerCase());
         }
         return true;
       });
@@ -150,54 +157,6 @@ function AppointmentsList() {
     }
   };
 
-  const handleNotesChange = (appointmentId, value) => {
-    setNotes((prevNotes) => ({
-      ...prevNotes,
-      [appointmentId]: value,
-    }));
-  };
-
-  const handleProblemChange = (appointmentId, value) => {
-    setProblems((prevProblems) => ({
-      ...prevProblems,
-      [appointmentId]: value,
-    }));
-  };
-
-  const saveNotes = async (appointmentId) => {
-    try {
-      dispatch(ShowLoader(true));
-      const response = await SaveDoctorNotes(appointmentId, notes[appointmentId]);
-      dispatch(ShowLoader(false));
-      if (response.success) {
-        message.success("Notes saved successfully");
-        getData();
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error) {
-      dispatch(ShowLoader(false));
-      message.error(error.message);
-    }
-  };
-
-  const saveProblem = async (appointmentId) => {
-    try {
-      dispatch(ShowLoader(true));
-      const response = await UpdateProblem(appointmentId, problems[appointmentId]);
-      dispatch(ShowLoader(false));
-      if (response.success) {
-        message.success("Problem updated successfully");
-        getData();
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error) {
-      dispatch(ShowLoader(false));
-      message.error(error.message);
-    }
-  };
-
   const onUpdate = async (id, status) => {
     try {
       dispatch(ShowLoader(true));
@@ -215,47 +174,185 @@ function AppointmentsList() {
     }
   };
 
+  const handleEdit = (record) => {
+    setEditingId(record.id);
+    setEditedNotes(record.notes);
+    setEditedProblem(record.problem);
+  };
+
+  const handleSave = async (id) => {
+    try {
+      dispatch(ShowLoader(true));
+      const notesResponse = await SaveDoctorNotes(id, editedNotes);
+      const problemResponse = await UpdateProblem(id, editedProblem);
+      dispatch(ShowLoader(false));
+      if (notesResponse.success && problemResponse.success) {
+        message.success("Appointment updated successfully");
+        setEditingId(null);
+        getData();
+      } else {
+        throw new Error(notesResponse.message || problemResponse.message);
+      }
+    } catch (error) {
+      dispatch(ShowLoader(false));
+      message.error(error.message);
+    }
+  };
+
+  const getColumnSearchProps = (dataIndex) => ({
+    filterDropdown: ({
+      setSelectedKeys,
+      selectedKeys,
+      confirm,
+      clearFilters,
+    }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={(e) =>
+            setSelectedKeys(e.target.value ? [e.target.value] : [])
+          }
+          onPressEnter={() => confirm()}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Button
+          type="primary"
+          onClick={() => confirm()}
+          icon={<SearchOutlined />}
+          size="small"
+          style={{ width: 90, marginRight: 8 }}
+        >
+          Search
+        </Button>
+        <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+          Reset
+        </Button>
+      </div>
+    ),
+    filterIcon: (filtered) => (
+      <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
+    ),
+    onFilter: (value, record) =>
+      record[dataIndex]
+        .toString()
+        .toLowerCase()
+        .includes(value.toLowerCase()),
+  });
+
   const columns = [
-    { title: "Date", dataIndex: "date", key: "date" },
-    { title: "Time", dataIndex: "slot", key: "slot" },
-    { title: "Doctor", dataIndex: "doctorName", key: "doctorName" },
-    { title: "Patient", dataIndex: "userName", key: "userName" },
-    { title: "Booked On", dataIndex: "bookedOn", key: "bookedOn" },
-    { title: "Problem", dataIndex: "problem", key: "problem" },
-    { title: "Status", dataIndex: "status", key: "status" },
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      sorter: (a, b) => moment(a.date).unix() - moment(b.date).unix(),
+      ...getColumnSearchProps("date"),
+    },
+    {
+      title: "Time",
+      dataIndex: "slot",
+      key: "slot",
+      sorter: (a, b) => a.slot.localeCompare(b.slot),
+      ...getColumnSearchProps("slot"),
+    },
+    {
+      title: "Doctor",
+      dataIndex: "doctorName",
+      key: "doctorName",
+      sorter: (a, b) => a.doctorName.localeCompare(b.doctorName),
+      ...getColumnSearchProps("doctorName"),
+    },
+    {
+      title: "Patient",
+      dataIndex: "userName",
+      key: "userName",
+      sorter: (a, b) => a.userName.localeCompare(b.userName),
+      ...getColumnSearchProps("userName"),
+    },
+    {
+      title: "Booked On",
+      dataIndex: "bookedOn",
+      key: "bookedOn",
+      sorter: (a, b) => moment(a.bookedOn).unix() - moment(b.bookedOn).unix(),
+      ...getColumnSearchProps("bookedOn"),
+    },
+    {
+      title: "Problem",
+      dataIndex: "problem",
+      key: "problem",
+      sorter: (a, b) => a.problem.localeCompare(b.problem),
+      render: (text, record) => {
+        return editingId === record.id ? (
+          <Input
+            value={editedProblem}
+            onChange={(e) => setEditedProblem(e.target.value)}
+          />
+        ) : (
+          text
+        );
+      },
+      ...getColumnSearchProps("problem"),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      sorter: (a, b) => a.status.localeCompare(b.status),
+      ...getColumnSearchProps("status"),
+    },
     {
       title: "Doctor's Notes",
       dataIndex: "notes",
       key: "notes",
+      render: (text, record) => {
+        return editingId === record.id ? (
+          <Input
+            value={editedNotes}
+            onChange={(e) => setEditedNotes(e.target.value)}
+          />
+        ) : (
+          text
+        );
+      },
     },
     {
       title: "Action",
       dataIndex: "action",
       key: "action",
-      render: (text, record) => (
-        <div
-          style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-        >
-          <Select
-            value={record.status}
-            onChange={(value) => onUpdate(record.id, value)}
-            style={{ width: 120 }}
-          >
-            <Option value="pending">Pending</Option>
-            <Option value="approved">Approved</Option>
-            <Option value="cancelled">Cancelled</Option>
-            <Option value="completed">Completed</Option>
-            <Option value="no show">No Show</Option>
-            <Option value="in progress">In Progress</Option>
-          </Select>
-          <span
-            style={{ textDecoration: "underline", cursor: "pointer" }}
-            onClick={() => confirmDelete(record.id)}
-          >
-            Delete
-          </span>
-        </div>
-      ),
+      render: (text, record) => {
+        return editingId === record.id ? (
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <Button onClick={() => handleSave(record.id)}>Save</Button>
+            <Button onClick={() => setEditingId(null)}>Cancel</Button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <Select
+              value={record.status}
+              onChange={(value) => onUpdate(record.id, value)}
+              style={{ width: 120 }}
+            >
+              <Option value="pending">Pending</Option>
+              <Option value="approved">Approved</Option>
+              <Option value="cancelled">Cancelled</Option>
+              <Option value="completed">Completed</Option>
+              <Option value="no show">No Show</Option>
+              <Option value="in progress">In Progress</Option>
+            </Select>
+            <span
+              style={{ textDecoration: "underline", cursor: "pointer" }}
+              onClick={() => confirmDelete(record.id)}
+            >
+              Delete
+            </span>
+            {user.role === "admin" && (
+              <Button type="link" onClick={() => handleEdit(record)}>
+                Edit
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -313,7 +410,11 @@ function AppointmentsList() {
         <Button
           type="primary"
           onClick={handleSearch}
-          style={{ backgroundColor: "white", color: "#004182", borderColor: "#004182" }}
+          style={{
+            backgroundColor: "white",
+            color: "#004182",
+            borderColor: "#004182",
+          }}
         >
           Search
         </Button>
@@ -321,7 +422,7 @@ function AppointmentsList() {
 
       <Table
         columns={columns}
-        dataSource={appointments}
+        dataSource={filteredAppointments.length > 0 ? filteredAppointments : appointments}
         pagination={false}
         rowKey="id"
         scroll={{ x: 600 }}
