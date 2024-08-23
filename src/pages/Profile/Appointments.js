@@ -214,7 +214,7 @@ function Appointments() {
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success('Notes saved successfully');
-        getData();
+        getData(); // Reload the data to reflect the saved notes
       } else {
         throw new Error(response.message);
       }
@@ -320,6 +320,22 @@ function Appointments() {
         .includes(value.toLowerCase()),
   });
 
+  const renderNotesColumn = (text, record) => {
+    const isModal = isModalVisible;
+    return (
+      <div>
+        <TextArea
+          rows={4}
+          value={notes[record.id] || record.notes || ""}
+          onChange={(e) => handleNotesChange(record.id, e.target.value)}
+        />
+        {!isModal && (
+          <button onClick={() => saveNotes(record.id, isModal)}>Save</button>
+        )}
+      </div>
+    );
+  };
+
   const columns = [
     {
       title: 'Date',
@@ -361,25 +377,6 @@ function Appointments() {
       dataIndex: 'problem',
       key: 'problem',
       sorter: (a, b) => a.problem.localeCompare(b.problem),
-      render: (text, record) => {
-        const isModal = isModalVisible;
-        if (user.role === "doctor") {
-          return (
-            <div>
-              <TextArea
-                rows={4}
-                value={notes[record.id] || record.notes}
-                onChange={(e) => handleNotesChange(record.id, e.target.value)}
-              />
-              {!isModal && (
-                <button onClick={() => saveNotes(record.id, isModal)}>Save</button>
-              )}
-            </div>
-          );
-        } else {
-          return <div>{record.notes || "No notes available"}</div>;
-        }
-      },
       ...getColumnSearchProps("problem"),
     },
     {
@@ -393,25 +390,7 @@ function Appointments() {
       title: 'Doctor\'s Notes',
       dataIndex: 'notes',
       key: 'notes',
-      render: (text, record) => {
-        const isModal = isModalVisible;
-        if (user.role === "doctor") {
-          return (
-            <div>
-              <TextArea
-                rows={4}
-                value={notes[record.id] || record.notes}
-                onChange={(e) => handleNotesChange(record.id, e.target.value)}
-              />
-              {!isModal && (
-                <button onClick={() => saveNotes(record.id, isModal)}>Save</button>
-              )}
-            </div>
-          );
-        } else {
-          return <div>{record.notes || "No notes available"}</div>;
-        }
-      }
+      render: renderNotesColumn
     },
     {
       title: 'Rate Doctor',
