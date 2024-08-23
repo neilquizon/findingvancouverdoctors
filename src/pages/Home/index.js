@@ -1,7 +1,9 @@
-import { Col, message, Row, Modal, Rate } from "antd"; // Import Rate from antd
+import { Col, message, Row, Modal, Rate } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { GetAllDoctors } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
 import sendEmail from "../../services/emailService"; 
@@ -15,6 +17,7 @@ const Footer = () => (
 function Home() {
   const [doctors, setDoctors] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
@@ -41,6 +44,10 @@ function Home() {
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value.toLowerCase());
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
   };
 
   const handleLogout = () => {
@@ -71,16 +78,23 @@ function Home() {
       const fullName = `${doctor.firstName} ${doctor.lastName}`.toLowerCase();
       const speciality = doctor.speciality?.toLowerCase() || '';
       const language = doctor.language?.toLowerCase() || '';
-      const daysAvailable = doctor.days?.join(', ').toLowerCase() || '';
+      const daysAvailable = doctor.days?.map(day => day.toLowerCase()).join(', ') || '';
       const availableTime = `${doctor.startTime} - ${doctor.endTime}`.toLowerCase();
 
-      return (
+      const matchesSearchQuery = (
         fullName.includes(searchQuery) ||
         speciality.includes(searchQuery) ||
         language.includes(searchQuery) ||
         daysAvailable.includes(searchQuery) ||
         availableTime.includes(searchQuery)
       );
+
+      if (selectedDate) {
+        const selectedDay = selectedDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+        return matchesSearchQuery && daysAvailable.includes(selectedDay);
+      }
+
+      return matchesSearchQuery;
     });
 
   const sortedDoctors = filteredDoctors.sort((a, b) => {
@@ -155,22 +169,30 @@ function Home() {
           </div>
         )}
       </div>
-      <div className="content my-1">
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem' }}>
-          <div>
-            {user && (
-              <button
-                style={{ border: '1px solid #004182', padding: '0.5rem 1rem', backgroundColor: 'transparent', cursor: 'pointer', marginBottom: '1rem' }}
-                onClick={() => navigate(user.role === "admin" ? "/admin" : "/profile")}
-              >
-                My Dashboard
-              </button>
-            )}
+      <div className="content my-1" style={{ padding: '1rem' }}>
+        {user && (
+          <div style={{ marginBottom: '1rem' }}>
+            <button
+              style={{ border: '1px solid #004182', padding: '0.5rem 1rem', backgroundColor: 'transparent', cursor: 'pointer' }}
+              onClick={() => navigate(user.role === "admin" ? "/admin" : "/profile")}
+            >
+              My Dashboard
+            </button>
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <input
               placeholder="Search doctors"
               style={{ width: '100%', maxWidth: '400px' }}
               value={searchQuery}
               onChange={handleSearch}
+            />
+            <DatePicker
+              selected={selectedDate}
+              onChange={handleDateChange}
+              placeholderText="Select date"
+              style={{ marginLeft: '1rem', maxWidth: '200px' }}
             />
           </div>
           {user && user.role !== "doctor" && user.role !== "admin" && (
