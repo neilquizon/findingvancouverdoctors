@@ -75,6 +75,10 @@ function Appointments() {
     setFilterValue(e.target.value ? moment(e.target.value).format('YYYY-MM-DD') : null);
   };
 
+  const handleStatusFilterChange = (value) => {
+    setFilterValue(value);
+  };
+
   const handleSearch = () => {
     let filtered = appointments;
 
@@ -322,15 +326,31 @@ function Appointments() {
       clearFilters,
     }) => (
       <div style={{ padding: 8 }}>
-        <Input
-          placeholder={`Search ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() => confirm()}
-          style={{ marginBottom: 8, display: "block" }}
-        />
+        {dataIndex === 'status' ? (
+          <Select
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+            value={selectedKeys[0]}
+            onChange={(value) => setSelectedKeys(value ? [value] : [])}
+            onSelect={() => confirm()}
+          >
+            <Option value="pending">Pending</Option>
+            <Option value="approved">Approved</Option>
+            <Option value="cancelled">Cancelled</Option>
+            <Option value="completed">Completed</Option>
+            <Option value="no show">No Show</Option>
+            <Option value="in progress">In Progress</Option>
+          </Select>
+        ) : (
+          <Input
+            placeholder={`Search ${dataIndex}`}
+            value={selectedKeys[0]}
+            onChange={(e) =>
+              setSelectedKeys(e.target.value ? [e.target.value] : [])
+            }
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+        )}
         <Button
           type="primary"
           onClick={() => confirm()}
@@ -494,6 +514,7 @@ function Appointments() {
       dataIndex: 'status',
       key: 'status',
       render: renderStatusColumn, // Custom render function for status
+      ...getColumnSearchProps("status"), // Apply search props for Status column
     },
     {
       title: "Doctor's Notes",
@@ -614,12 +635,18 @@ function Appointments() {
         )}
 
         {filterType === 'Status' && (
-          <Input
-            placeholder="Enter Status"
-            value={filterValue}
-            onChange={handleFilterValueChange}
+          <Select
             style={{ width: 200 }}
-          />
+            placeholder="Select Status"
+            onChange={handleStatusFilterChange}
+          >
+            <Option value="pending">Pending</Option>
+            <Option value="approved">Approved</Option>
+            <Option value="cancelled">Cancelled</Option>
+            <Option value="completed">Completed</Option>
+            <Option value="no show">No Show</Option>
+            <Option value="in progress">In Progress</Option>
+          </Select>
         )}
 
         <Button type="primary" onClick={handleSearch}>
