@@ -41,7 +41,7 @@ function Appointments() {
 
         const ratedSet = new Set();
         sortedAppointments.forEach(appointment => {
-          if (appointment.rating) {
+          if (appointment.rating || appointment.status === "Rated") {
             ratedSet.add(appointment.id);
           }
         });
@@ -242,19 +242,30 @@ function Appointments() {
       }
 
       dispatch(ShowLoader(true));
+      
+      // Submit the rating
       const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating);
-      dispatch(ShowLoader(false));
-
+      
       if (response.success) {
-        message.success('Rating submitted successfully');
+        // Update status to "Rated"
+        await UpdateAppointmentStatus(appointmentId, "Rated");
+        
+        // Update the local state immediately to reflect the change
+        const updatedAppointments = appointments.map(app => 
+          app.id === appointmentId ? { ...app, status: "Rated", rating: selectedRating } : app
+        );
+
+        setAppointments(updatedAppointments);
         setRatedAppointments(new Set([...ratedAppointments, appointmentId]));
-        getData();
+        
+        message.success('Rating submitted successfully');
       } else {
         throw new Error(response.message);
       }
     } catch (error) {
-      dispatch(ShowLoader(false));
       message.error(error.message);
+    } finally {
+      dispatch(ShowLoader(false));
     }
   };
 

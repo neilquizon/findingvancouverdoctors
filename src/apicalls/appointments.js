@@ -2,7 +2,7 @@ import {
   addDoc,
   collection,
   doc,
-  getDoc, // Added getDoc import
+  getDoc,
   getDocs,
   query,
   updateDoc,
@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import firestoreDatabase from "../firebaseConfig";
 
+// Function to book a doctor appointment
 export const BookDoctorAppointment = async (payload) => {
   try {
     await addDoc(collection(firestoreDatabase, "appointments"), payload);
@@ -21,6 +22,7 @@ export const BookDoctorAppointment = async (payload) => {
   }
 };
 
+// Function to get doctor appointments on a specific date
 export const GetDoctorAppointmentsOnDate = async (doctorId, date) => {
   try {
     const querySnapshot = await getDocs(
@@ -40,6 +42,7 @@ export const GetDoctorAppointmentsOnDate = async (doctorId, date) => {
   }
 };
 
+// Function to get all appointments for a specific doctor
 export const GetDoctorAppointments = async (doctorId) => {
   try {
     const querySnapshot = await getDocs(
@@ -61,6 +64,7 @@ export const GetDoctorAppointments = async (doctorId) => {
   }
 };
 
+// Function to get all appointments for a specific user
 export const GetUserAppointments = async (userId) => {
   try {
     const querySnapshot = await getDocs(
@@ -82,6 +86,7 @@ export const GetUserAppointments = async (userId) => {
   }
 };
 
+// Function to update the status of an appointment
 export const UpdateAppointmentStatus = async (id, status) => {
   try {
     await updateDoc(doc(firestoreDatabase, "appointments", id), {
@@ -93,6 +98,7 @@ export const UpdateAppointmentStatus = async (id, status) => {
   }
 };
 
+// Function to delete an appointment and send cancellation emails
 export const DeleteAppointment = async (id, doctorEmail, userEmail, cancelledBy) => {
   try {
     // Delete the appointment from the database
@@ -114,6 +120,7 @@ export const DeleteAppointment = async (id, doctorEmail, userEmail, cancelledBy)
   }
 };
 
+// Function to update the date of an appointment
 export const UpdateAppointmentDate = async (id, date) => {
   try {
     await updateDoc(doc(firestoreDatabase, "appointments", id), {
@@ -125,6 +132,7 @@ export const UpdateAppointmentDate = async (id, date) => {
   }
 };
 
+// Function to get all appointments
 export const GetAppointments = async () => {
   try {
     const querySnapshot = await getDocs(collection(firestoreDatabase, "appointments"));
@@ -141,6 +149,7 @@ export const GetAppointments = async () => {
   }
 };
 
+// Function to save doctor's notes for an appointment
 export const SaveDoctorNotes = async (appointmentId, notes) => {
   try {
     await updateDoc(doc(firestoreDatabase, "appointments", appointmentId), {
@@ -152,6 +161,7 @@ export const SaveDoctorNotes = async (appointmentId, notes) => {
   }
 };
 
+// Function to update the problem description of an appointment
 export const UpdateProblem = async (appointmentId, problem) => {
   try {
     await updateDoc(doc(firestoreDatabase, "appointments", appointmentId), {
@@ -163,7 +173,7 @@ export const UpdateProblem = async (appointmentId, problem) => {
   }
 };
 
-// SubmitRating function
+// Function to submit a rating for a doctor by a user
 export const SubmitRating = async (doctorId, userId, rating) => {
   try {
     // Fetch the existing appointment
@@ -174,11 +184,11 @@ export const SubmitRating = async (doctorId, userId, rating) => {
     if (!appointmentSnapshot.empty) {
       // Assume there is only one appointment for a given doctor-user pair
       const appointmentDoc = appointmentSnapshot.docs[0];
-      const appointmentData = appointmentDoc.data();
 
       // Update the rating in the appointment document
       await updateDoc(doc(firestoreDatabase, "appointments", appointmentDoc.id), {
         rating: rating,
+        status: "Rated",  // Update the status to "Rated"
       });
 
       // Optionally, update the doctor's average rating
