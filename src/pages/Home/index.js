@@ -62,14 +62,10 @@ function Home() {
   };
 
   const calculateAverageRating = (doctor) => {
-    if (doctor.averageRating && doctor.ratingCount) {
-      return doctor.averageRating;
-    }
-
     if (!doctor.ratings || doctor.ratings.length === 0) return 0;
 
-    const total = doctor.ratings.reduce((sum, rating) => sum + rating, 0);
-    return total / doctor.ratings.length;
+    const totalRating = doctor.ratings.reduce((sum, rating) => sum + rating.rating, 0);
+    return (totalRating / doctor.ratings.length).toFixed(1);
   };
 
   const filteredDoctors = doctors
@@ -225,11 +221,11 @@ function Home() {
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     <Rate disabled value={calculateAverageRating(doctor)} />
                     <span style={{ marginLeft: '0.5rem' }}>
-                      {calculateAverageRating(doctor).toFixed(1)}
+                      {calculateAverageRating(doctor) || '0.0'}
                     </span>
                   </div>
                   <div>
-                    <small>{doctor.ratingCount || 0} review{doctor.ratingCount !== 1 ? 's' : ''}</small>
+                    <small>{doctor.ratings?.length || 0} review{doctor.ratings?.length !== 1 ? 's' : ''}</small>
                   </div>
                 </div>
                 <hr />

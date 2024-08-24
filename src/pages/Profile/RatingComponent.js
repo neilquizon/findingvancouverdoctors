@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Rate, Button, Input, message } from 'antd';
-import { SubmitRating } from '../../apicalls/doctors';
+import { SubmitRating, GetDoctorById } from '../../apicalls/doctors';
 
 const { TextArea } = Input;
 
@@ -8,6 +8,32 @@ const RatingComponent = ({ doctorId, userId, appointmentId, onComplete }) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [alreadyRated, setAlreadyRated] = useState(false);
+
+  useEffect(() => {
+    const checkIfRated = async () => {
+      try {
+        const doctorData = await GetDoctorById(doctorId);
+        const userHasRated = doctorData.data?.ratings?.some(
+          (r) => r.userId === userId
+        );
+        if (userHasRated) {
+          setAlreadyRated(true);
+          localStorage.setItem(`rated_${doctorId}_${userId}`, 'true');
+        }
+      } catch (error) {
+        message.error("Error fetching rating data.");
+      }
+    };
+
+    // Initial check
+    checkIfRated();
+
+    // Additional re-check after component re-renders (e.g., after UI reappears)
+    return () => {
+      checkIfRated();
+    };
+  }, [doctorId, userId]);
 
   const handleSubmit = async () => {
     if (!rating) {
@@ -19,11 +45,17 @@ const RatingComponent = ({ doctorId, userId, appointmentId, onComplete }) => {
     setLoading(false);
     if (response.success) {
       message.success("Rating submitted successfully.");
-      onComplete(appointmentId);
+      onComplete(appointmentId); // Notify parent to update rated appointments
+      setAlreadyRated(true);
+      localStorage.setItem(`rated_${doctorId}_${userId}`, 'true');
     } else {
       message.error(response.message);
     }
   };
+
+  if (alreadyRated) {
+    return <div>You have already rated this doctor.</div>;
+  }
 
   return (
     <div>

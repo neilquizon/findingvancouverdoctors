@@ -8,6 +8,7 @@ import {
   updateDoc,
   deleteDoc,
   where,
+  arrayUnion,
 } from "firebase/firestore";
 import axios from 'axios';
 import firestoreDatabase from "../firebaseConfig";
@@ -174,49 +175,38 @@ export const UpdateProblem = async (appointmentId, problem) => {
 };
 
 // Function to submit a rating for a doctor by a user
-export const SubmitRating = async (doctorId, userId, rating) => {
+export const SubmitRating = async (doctorId, userId, rating, comment) => {
   try {
-    // Fetch the existing appointment
-    const appointmentsRef = collection(firestoreDatabase, "appointments");
-    const q = query(appointmentsRef, where("doctorId", "==", doctorId), where("userId", "==", userId));
-    const appointmentSnapshot = await getDocs(q);
+    const doctorRef = doc(firestoreDatabase, "doctors", doctorId);
+    const doctorDoc = await getDoc(doctorRef);
 
-    if (!appointmentSnapshot.empty) {
-      // Assume there is only one appointment for a given doctor-user pair
-      const appointmentDoc = appointmentSnapshot.docs[0];
-
-      // Update the rating in the appointment document
-      await updateDoc(doc(firestoreDatabase, "appointments", appointmentDoc.id), {
-        rating: rating,
-        // Removed the status update here
-      });
-
-      // Optionally, update the doctor's average rating
-      const doctorRef = doc(firestoreDatabase, "doctors", doctorId);
-      const doctorDoc = await getDoc(doctorRef);
-
-      if (doctorDoc.exists()) {
-        const doctorData = doctorDoc.data();
-        const newRatingCount = (doctorData.ratingCount || 0) + 1;
-        const newAverageRating = ((doctorData.averageRating || 0) * (newRatingCount - 1) + rating) / newRatingCount;
-
-        await updateDoc(doctorRef, {
-          averageRating: newAverageRating,
-          ratingCount: newRatingCount,
-        });
-      }
-
-      return {
-        success: true,
-        message: "Rating submitted successfully",
-      };
-    } else {
-      throw new Error("Appointment not found for this doctor and user");
+    if (!doctorDoc.exists()) {
+      throw new Error("Doctor not found.");
     }
+
+    const doctorData = doctorDoc.data();
+
+    // Check if the user has already rated this doctor
+    const alreadyRated = doctorData.ratings?.some(
+      (r) => r.userId === userId
+    );
+
+    if (alreadyRated) {
+      return { success: false, message: "You have already rated this doctor.", alreadyRated: true };
+    }
+
+    // Add the rating to the doctor's ratings array
+    await updateDoc(doctorRef, {
+      ratings: arrayUnion({
+        userId: userId,
+        rating: rating,
+        comment: comment,
+        date: new Date(),
+      }),
+    });
+
+    return { success: true, message: "Rating submitted successfully.", alreadyRated: false };
   } catch (error) {
-    return {
-      success: false,
-      message: error.message,
-    };
+    return { success: false, message: error.message, alreadyRated: false };
   }
 };

@@ -6,14 +6,14 @@ import { GetDoctorById } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
 import moment from "moment";
 import { BookDoctorAppointment, GetDoctorAppointmentsOnDate } from "../../apicalls/appointments";
-import emailjs from "emailjs-com"; // Import emailjs
+import emailjs from "emailjs-com";
 
 function BookAppointment() {
   const [problem, setProblem] = useState("");
   const [date, setDate] = useState("");
   const [doctor, setDoctor] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState("");
-  const [loading, setLoading] = useState(true); // Local loading state
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
   const dispatch = useDispatch();
@@ -21,7 +21,7 @@ function BookAppointment() {
 
   const getData = useCallback(async () => {
     try {
-      setLoading(true); // Start loading
+      setLoading(true);
       dispatch(ShowLoader(true));
       const response = await GetDoctorById(id);
       if (response.success) {
@@ -33,14 +33,14 @@ function BookAppointment() {
       message.error(error.message);
     } finally {
       dispatch(ShowLoader(false));
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   }, [id, dispatch]);
 
   const getBookedSlots = useCallback(async () => {
     if (!date) return;
     try {
-      setLoading(true); // Start loading
+      setLoading(true);
       dispatch(ShowLoader(true));
       const response = await GetDoctorAppointmentsOnDate(id, date);
       if (response.success) {
@@ -52,7 +52,7 @@ function BookAppointment() {
       message.error(error.message);
     } finally {
       dispatch(ShowLoader(false));
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   }, [id, date, dispatch]);
 
@@ -72,7 +72,7 @@ function BookAppointment() {
 
     let startTime = moment(doctor.startTime, "HH:mm");
     let endTime = moment(doctor.endTime, "HH:mm");
-    let slotDuration = 60; // in minutes
+    let slotDuration = 60;
     const slots = [];
     while (startTime < endTime) {
       slots.push(startTime.format("HH:mm"));
@@ -143,7 +143,7 @@ function BookAppointment() {
         slot: selectedSlot,
         doctorName: `${doctor.firstName} ${doctor.lastName}`,
         userName: user.name,
-        userEmail: user.email, // Capture the user's email
+        userEmail: user.email,
         bookedOn: moment().format("DD-MM-YYYY hh:mm A"),
         problem,
         status: "pending",
@@ -173,13 +173,9 @@ function BookAppointment() {
   };
 
   const calculateAverageRating = (doctor) => {
-    if (doctor?.averageRating && doctor?.ratingCount) {
-      return doctor.averageRating;
-    }
-
     if (!doctor?.ratings || doctor.ratings.length === 0) return 0;
 
-    const total = doctor.ratings.reduce((sum, rating) => sum + rating, 0);
+    const total = doctor.ratings.reduce((sum, rating) => sum + rating.rating, 0);
     return total / doctor.ratings.length;
   };
 
@@ -213,7 +209,7 @@ function BookAppointment() {
               </span>
             </div>
             <div>
-              <small>{doctor.ratingCount || 0} review{doctor.ratingCount !== 1 ? 's' : ''}</small>
+              <small>{doctor.ratings?.length || 0} review{doctor.ratings?.length !== 1 ? 's' : ''}</small>
             </div>
           </div>
 
@@ -299,6 +295,25 @@ function BookAppointment() {
                   </button>
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* Displaying Ratings and Comments */}
+          <div className="my-4">
+            <h3 className="text-center">Ratings and Comments</h3>
+            {doctor.ratings && doctor.ratings.length > 0 ? (
+              doctor.ratings.map((rating, index) => (
+                <div key={index} className="p-2 border rounded my-2">
+                  <div className="flex justify-between">
+                    <span><b>User:</b> {rating.userId}</span>
+                    <Rate disabled value={rating.rating} />
+                  </div>
+                  <p><b>Comment:</b> {rating.comment || "No comment provided."}</p>
+                  <p><small><b>Date:</b> {moment(rating.date.toDate()).format("DD-MM-YYYY")}</small></p>
+                </div>
+              ))
+            ) : (
+              <p className="text-center">No ratings or comments available.</p>
             )}
           </div>
         </div>

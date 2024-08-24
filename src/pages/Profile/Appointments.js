@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
 import { Table, message, Modal, Select, Input, Button } from 'antd';
 import { GetDoctorAppointments, GetUserAppointments, UpdateAppointmentStatus, DeleteAppointment, SaveDoctorNotes, SubmitRating } from '../../apicalls/appointments';
+import { GetDoctorById } from '../../apicalls/doctors';
 import emailjs from 'emailjs-com';
 import './Appointments.css';
 import moment from 'moment';
@@ -22,6 +23,7 @@ function Appointments() {
   const [problems, setProblems] = useState({});
   const [ratedAppointments, setRatedAppointments] = useState(new Set());
   const [rating, setRating] = useState({});
+  const [comment, setComment] = useState({});
   const dispatch = useDispatch();
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ function Appointments() {
           }
         });
 
-        setRatedAppointments(ratedSet);
+        setRatedAppointments(ratedSet); // Set rated appointments
         setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
@@ -59,7 +61,7 @@ function Appointments() {
   }, [dispatch, user.id, user.role]);
 
   useEffect(() => {
-    getData();
+    getData(); // Fetch data when component mounts
   }, [getData]);
 
   const handleFilterChange = (value) => {
@@ -262,11 +264,35 @@ function Appointments() {
     }));
   };
 
+  const handleCommentChange = (appointmentId, value) => {
+    setComment(prevComment => ({
+      ...prevComment,
+      [appointmentId]: value,
+    }));
+  };
+
+  const recheckRating = async (appointmentId) => {
+    try {
+      const appointment = appointments.find(app => app.id === appointmentId);
+      const doctorId = appointment.doctorId;
+      const doctorData = await GetDoctorById(doctorId);
+      const userHasRated = doctorData.data?.ratings?.some(
+        (r) => r.userId === user.id
+      );
+      if (userHasRated) {
+        setRatedAppointments(prevRatedAppointments => new Set([...prevRatedAppointments, appointmentId]));
+      }
+    } catch (error) {
+      message.error("Error rechecking rating data.");
+    }
+  };
+
   const submitRating = async (appointmentId, isModal) => {
     if (isModal) return;
 
     try {
       const selectedRating = rating[appointmentId];
+      const userComment = comment[appointmentId];
       if (!selectedRating) {
         message.error("Please select a rating before submitting.");
         return;
@@ -274,19 +300,22 @@ function Appointments() {
 
       dispatch(ShowLoader(true));
       
-      // Submit the rating
-      const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating);
+      // Submit the rating with a comment
+      const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating, userComment);
       
       if (response.success) {
         // Update the local state to reflect the rating submission
         const updatedAppointments = appointments.map(app => 
-          app.id === appointmentId ? { ...app, rating: selectedRating } : app
+          app.id === appointmentId ? { ...app, rating: selectedRating, comment: userComment } : app
         );
 
         setAppointments(updatedAppointments);
         setRatedAppointments(new Set([...ratedAppointments, appointmentId]));
         
         message.success('Rating submitted successfully');
+
+        // Recheck if the rating UI should be hidden
+        recheckRating(appointmentId);
       } else {
         throw new Error(response.message);
       }
@@ -442,8 +471,13 @@ function Appointments() {
   };
 
   const renderRateDoctorColumn = (text, record) => {
-    const isModal = isModalVisible;
-    if (user.role !== "doctor" && !ratedAppointments.has(record.id)) {
+    if (user.role !== "doctor") {
+      // Check if the appointment is already rated
+      if (ratedAppointments.has(record.id)) {
+        return 'Done'; // Show "Done" if the doctor is already rated
+      }
+  
+      // Render the rating UI if not already rated
       return (
         <div>
           <Select
@@ -456,16 +490,22 @@ function Appointments() {
               <Option key={star} value={star}>{`${star} Star${star > 1 ? 's' : ''}`}</Option>
             ))}
           </Select>
-          {!isModal && (
-            <Button type="primary" onClick={() => submitRating(record.id, isModal)}>
-              Submit Rating
-            </Button>
-          )}
+          <TextArea
+            rows={2}
+            value={comment[record.id]}
+            onChange={(e) => handleCommentChange(record.id, e.target.value)}
+            placeholder="Add a comment"
+            style={{ marginTop: 8 }}
+          />
+          <Button type="primary" onClick={() => submitRating(record.id, false)}>
+            Submit Rating
+          </Button>
         </div>
       );
     }
-    return 'Rated';
+    return null;
   };
+  
 
   const columns = [
     {
