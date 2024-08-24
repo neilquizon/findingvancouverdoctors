@@ -181,20 +181,12 @@ function Home() {
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <input
-              placeholder="Search doctors"
-              style={{ width: '100%', maxWidth: '400px' }}
-              value={searchQuery}
-              onChange={handleSearch}
-            />
-            <DatePicker
-              selected={selectedDate}
-              onChange={handleDateChange}
-              placeholderText="Select date"
-              style={{ marginLeft: '1rem', maxWidth: '200px' }}
-            />
-          </div>
+          <input
+            placeholder="Search doctors"
+            style={{ width: '100%', maxWidth: '400px', marginRight: '1rem' }}
+            value={searchQuery}
+            onChange={handleSearch}
+          />
           {user && user.role !== "doctor" && user.role !== "admin" && (
             <button
               style={{ padding: '0.5rem 1rem', backgroundColor: 'transparent', cursor: 'pointer', border: 'none' }}
@@ -203,6 +195,14 @@ function Home() {
               Register as a Doctor
             </button>
           )}
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <DatePicker
+            selected={selectedDate}
+            onChange={handleDateChange}
+            placeholderText="Select date"
+            style={{ maxWidth: '200px' }}
+          />
         </div>
         <Row gutter={[16, 16]} style={{ margin: '1rem 0' }}>
           {sortedDoctors.map((doctor) => (
