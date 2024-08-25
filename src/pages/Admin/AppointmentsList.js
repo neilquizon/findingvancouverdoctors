@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { Table, message, Modal, Select, Input, Button } from "antd";
+import { Table, message, Modal, Select, Input, Button, DatePicker } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { ShowLoader } from "../../redux/loaderSlice";
 import {
@@ -14,6 +14,7 @@ import sendEmail from "../../services/emailService";
 import moment from "moment";
 
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 const Footer = () => (
   <footer
@@ -76,10 +77,6 @@ function AppointmentsList() {
     setFilterValue(e.target.value);
   };
 
-  const handleDateFilterChange = (e) => {
-    setFilterValue(e.target.value);
-  };
-
   const handleSearch = () => {
     let filtered = appointments;
 
@@ -96,7 +93,8 @@ function AppointmentsList() {
             .includes(filterValue.toLowerCase());
         }
         if (filterType === "Appointment Date") {
-          return moment(appointment.date).isSame(filterValue, "day");
+          const [start, end] = filterValue;
+          return moment(appointment.date).isBetween(start, end, null, "[]");
         }
         if (filterType === "Status") {
           return appointment.status
@@ -207,15 +205,24 @@ function AppointmentsList() {
       clearFilters,
     }) => (
       <div style={{ padding: 8 }}>
-        <Input
-          placeholder={`Search ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() => confirm()}
-          style={{ marginBottom: 8, display: "block" }}
-        />
+        {dataIndex === "date" ? (
+          <RangePicker
+            onChange={(dates, dateStrings) => {
+              setSelectedKeys(dateStrings.length > 0 ? [dateStrings] : []);
+            }}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+        ) : (
+          <Input
+            placeholder={`Search ${dataIndex}`}
+            value={selectedKeys[0]}
+            onChange={(e) =>
+              setSelectedKeys(e.target.value ? [e.target.value] : [])
+            }
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+        )}
         <Button
           type="primary"
           onClick={() => confirm()}
@@ -234,10 +241,12 @@ function AppointmentsList() {
       <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
     ),
     onFilter: (value, record) =>
-      record[dataIndex]
-        .toString()
-        .toLowerCase()
-        .includes(value.toLowerCase()),
+      dataIndex === "date"
+        ? moment(record[dataIndex]).isBetween(value[0], value[1], null, "[]")
+        : record[dataIndex]
+            .toString()
+            .toLowerCase()
+            .includes(value.toLowerCase()),
   });
 
   const columns = [
@@ -390,11 +399,9 @@ function AppointmentsList() {
         )}
 
         {filterType === "Appointment Date" && (
-          <Input
-            type="date"
-            value={filterValue}
-            onChange={handleDateFilterChange}
-            style={{ width: 200 }}
+          <RangePicker
+            onChange={(dates, dateStrings) => setFilterValue(dateStrings)}
+            style={{ width: 300 }}
           />
         )}
 

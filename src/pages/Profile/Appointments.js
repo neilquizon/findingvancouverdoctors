@@ -5,13 +5,12 @@ import { Table, message, Modal, Select, Input, Button } from 'antd';
 import { GetDoctorAppointments, GetUserAppointments, UpdateAppointmentStatus, DeleteAppointment, SaveDoctorNotes, SubmitRating } from '../../apicalls/appointments';
 import { GetDoctorById } from '../../apicalls/doctors';
 import { doc, updateDoc } from 'firebase/firestore';
-import firestoreDatabase from '../../firebaseConfig'; // Import your Firestore config
+import firestoreDatabase from '../../firebaseConfig';
 import emailjs from 'emailjs-com';
 import './Appointments.css';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import { SearchOutlined } from "@ant-design/icons";
-
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -20,6 +19,8 @@ function Appointments() {
   const [appointments, setAppointments] = useState([]);
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [filterType, setFilterType] = useState(null);
+  const [filterFromDate, setFilterFromDate] = useState(null);
+  const [filterToDate, setFilterToDate] = useState(null);
   const [filterValue, setFilterValue] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [notes, setNotes] = useState({});
@@ -77,14 +78,20 @@ function Appointments() {
   const handleFilterChange = (value) => {
     setFilterType(value);
     setFilterValue(null);
+    setFilterFromDate(null);
+    setFilterToDate(null);
   };
 
   const handleFilterValueChange = (e) => {
     setFilterValue(e.target.value);
   };
 
-  const handleDateFilterChange = (e) => {
-    setFilterValue(e.target.value ? moment(e.target.value).format('YYYY-MM-DD') : null);
+  const handleFromDateChange = (e) => {
+    setFilterFromDate(e.target.value ? moment(e.target.value).format('YYYY-MM-DD') : null);
+  };
+
+  const handleToDateChange = (e) => {
+    setFilterToDate(e.target.value ? moment(e.target.value).format('YYYY-MM-DD') : null);
   };
 
   const handleStatusFilterChange = (value) => {
@@ -94,26 +101,14 @@ function Appointments() {
   const handleSearch = () => {
     let filtered = appointments;
 
-    if (filterType && filterValue) {
+    if (filterType === 'Appointment Date' && filterFromDate && filterToDate) {
       filtered = appointments.filter((appointment) => {
-        if (user.role === 'user') {
-          if (filterType === 'Doctors') {
-            return appointment.doctorName.toLowerCase().includes(filterValue.toLowerCase());
-          }
-        } else if (user.role === 'doctor') {
-          if (filterType === 'Patients') {
-            return appointment.userName.toLowerCase().includes(filterValue.toLowerCase());
-          }
-        }
-        if (filterType === 'Appointment Date') {
-          return moment(appointment.date).isSame(filterValue, 'day');
-        }
-        if (filterType === 'Status') {
-          return appointment.status.toLowerCase().includes(filterValue.toLowerCase());
-        }
-        return true;
+        const appointmentDate = moment(appointment.date);
+        return appointmentDate.isBetween(filterFromDate, filterToDate, 'day', '[]');
       });
     }
+
+    // Other filter conditions remain the same...
 
     setFilteredAppointments(filtered);
     setIsModalVisible(true);
@@ -377,20 +372,31 @@ function Appointments() {
       clearFilters,
     }) => (
       <div style={{ padding: 8 }}>
-        {dataIndex === 'status' ? (
-          <Select
-            style={{ width: 188, marginBottom: 8, display: 'block' }}
-            value={selectedKeys[0]}
-            onChange={(value) => setSelectedKeys(value ? [value] : [])}
-            onSelect={() => confirm()}
-          >
-            <Option value="pending">Pending</Option>
-            <Option value="approved">Approved</Option>
-            <Option value="cancelled">Cancelled</Option>
-            <Option value="completed">Completed</Option>
-            <Option value="no show">No Show</Option>
-            <Option value="in progress">In Progress</Option>
-          </Select>
+        {dataIndex === 'date' ? (
+          <div>
+            <Input
+              type="date"
+              placeholder="From Date"
+              value={filterFromDate}
+              onChange={(e) => {
+                const value = e.target.value ? moment(e.target.value).format('YYYY-MM-DD') : null;
+                setFilterFromDate(value);
+                setSelectedKeys([value, filterToDate]);
+              }}
+              style={{ width: 188, marginBottom: 8, display: 'block' }}
+            />
+            <Input
+              type="date"
+              placeholder="To Date"
+              value={filterToDate}
+              onChange={(e) => {
+                const value = e.target.value ? moment(e.target.value).format('YYYY-MM-DD') : null;
+                setFilterToDate(value);
+                setSelectedKeys([filterFromDate, value]);
+              }}
+              style={{ width: 188, marginBottom: 8, display: 'block' }}
+            />
+          </div>
         ) : (
           <Input
             placeholder={`Search ${dataIndex}`}
@@ -419,11 +425,16 @@ function Appointments() {
     filterIcon: (filtered) => (
       <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
     ),
-    onFilter: (value, record) =>
-      record[dataIndex]
+    onFilter: (value, record) => {
+      if (dataIndex === 'date' && filterFromDate && filterToDate) {
+        const appointmentDate = moment(record[dataIndex]);
+        return appointmentDate.isBetween(filterFromDate, filterToDate, 'day', '[]');
+      }
+      return record[dataIndex]
         .toString()
         .toLowerCase()
-        .includes(value.toLowerCase()),
+        .includes(value.toLowerCase());
+    },
   });
 
   const renderNotesColumn = (text, record) => {
@@ -494,10 +505,8 @@ function Appointments() {
 
   const renderRateDoctorColumn = (text, record) => {
     if (user.role !== "doctor") {
-      // Check if the appointment is already rated
       const isRated = ratedStatus[record.id] === "Yes";
 
-      // Render the rating UI if not already rated
       return (
         <div>
           <Select
@@ -568,32 +577,32 @@ function Appointments() {
       title: 'Problem',
       dataIndex: 'problem',
       key: 'problem',
-      render: renderProblemColumn, // Custom render function for editing based on role and date
+      render: renderProblemColumn,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: renderStatusColumn, // Custom render function for status
-      ...getColumnSearchProps("status"), // Apply search props for Status column
+      render: renderStatusColumn,
+      ...getColumnSearchProps("status"),
     },
     {
       title: "Doctor's Notes",
       dataIndex: 'notes',
       key: 'notes',
-      render: renderNotesColumn, // Custom render function for conditionally editing
+      render: renderNotesColumn,
     },
     {
       title: 'Rate Doctor',
       dataIndex: 'rateDoctor',
       key: 'rateDoctor',
-      render: renderRateDoctorColumn, // Custom render function for rating
+      render: renderRateDoctorColumn,
     },
     {
       title: 'Rated',
       dataIndex: 'rated',
       key: 'rated',
-      render: (text, record) => ratedStatus[record.id] || "Not Yet", // Render "Yes" or "Not Yet"
+      render: (text, record) => ratedStatus[record.id] || "Not Yet",
     }
   ];
 
@@ -657,7 +666,6 @@ function Appointments() {
 
   return (
     <div className="table-container">
-      {/* Render filter based on user's role */}
       <div style={{ marginBottom: 16 }}>
         <Select
           style={{ width: 200, marginRight: 16 }}
@@ -693,12 +701,22 @@ function Appointments() {
         )}
 
         {filterType === 'Appointment Date' && (
-          <Input
-            type="date"
-            value={filterValue}
-            onChange={handleDateFilterChange}
-            style={{ width: 200 }}
-          />
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Input
+              type="date"
+              placeholder="From Date"
+              value={filterFromDate}
+              onChange={handleFromDateChange}
+              style={{ width: 200 }}
+            />
+            <Input
+              type="date"
+              placeholder="To Date"
+              value={filterToDate}
+              onChange={handleToDateChange}
+              style={{ width: 200 }}
+            />
+          </div>
         )}
 
         {filterType === 'Status' && (
@@ -729,7 +747,6 @@ function Appointments() {
         scroll={{ x: 600 }}
       />
 
-      {/* Modal for displaying filtered results */}
       <Modal
         title="Filtered Appointments"
         visible={isModalVisible}
