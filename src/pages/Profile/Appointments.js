@@ -4,11 +4,14 @@ import { ShowLoader } from '../../redux/loaderSlice';
 import { Table, message, Modal, Select, Input, Button } from 'antd';
 import { GetDoctorAppointments, GetUserAppointments, UpdateAppointmentStatus, DeleteAppointment, SaveDoctorNotes, SubmitRating } from '../../apicalls/appointments';
 import { GetDoctorById } from '../../apicalls/doctors';
+import { doc, updateDoc } from 'firebase/firestore';
+import firestoreDatabase from '../../firebaseConfig'; // Import your Firestore config
 import emailjs from 'emailjs-com';
 import './Appointments.css';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import { SearchOutlined } from "@ant-design/icons";
+
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -22,6 +25,7 @@ function Appointments() {
   const [notes, setNotes] = useState({});
   const [problems, setProblems] = useState({});
   const [ratedAppointments, setRatedAppointments] = useState(new Set());
+  const [ratedStatus, setRatedStatus] = useState({});
   const [rating, setRating] = useState({});
   const [comment, setComment] = useState({});
   const dispatch = useDispatch();
@@ -43,13 +47,19 @@ function Appointments() {
         const sortedAppointments = response.data.sort((a, b) => moment(a.date).unix() - moment(b.date).unix());
 
         const ratedSet = new Set();
+        const ratedStatus = {};
+
         sortedAppointments.forEach(appointment => {
-          if (appointment.rating || appointment.status === "Rated") {
+          if (appointment.rated === "Yes") {
             ratedSet.add(appointment.id);
+            ratedStatus[appointment.id] = "Yes";
+          } else {
+            ratedStatus[appointment.id] = "Not Yet";
           }
         });
 
-        setRatedAppointments(ratedSet); // Set rated appointments
+        setRatedAppointments(ratedSet);
+        setRatedStatus(ratedStatus);
         setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
@@ -61,7 +71,7 @@ function Appointments() {
   }, [dispatch, user.id, user.role]);
 
   useEffect(() => {
-    getData(); // Fetch data when component mounts
+    getData();
   }, [getData]);
 
   const handleFilterChange = (value) => {
@@ -243,7 +253,7 @@ function Appointments() {
 
     try {
       dispatch(ShowLoader(true));
-      const response = await SaveDoctorNotes(appointmentId, problems[appointmentId]); // Assuming you're using the same API endpoint
+      const response = await SaveDoctorNotes(appointmentId, problems[appointmentId]);
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success('Problem saved successfully');
@@ -281,6 +291,10 @@ function Appointments() {
       );
       if (userHasRated) {
         setRatedAppointments(prevRatedAppointments => new Set([...prevRatedAppointments, appointmentId]));
+        setRatedStatus(prevRatedStatus => ({
+          ...prevRatedStatus,
+          [appointmentId]: "Yes"
+        }));
       }
     } catch (error) {
       message.error("Error rechecking rating data.");
@@ -301,16 +315,24 @@ function Appointments() {
       dispatch(ShowLoader(true));
       
       // Submit the rating with a comment
-      const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating, userComment);
+      const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating, userComment, appointmentId);
       
       if (response.success) {
+        // Update Firestore 'rated' field to "Yes"
+        const appointmentDoc = doc(firestoreDatabase, 'appointments', appointmentId);
+        await updateDoc(appointmentDoc, { rated: "Yes" });
+
         // Update the local state to reflect the rating submission
         const updatedAppointments = appointments.map(app => 
-          app.id === appointmentId ? { ...app, rating: selectedRating, comment: userComment } : app
+          app.id === appointmentId ? { ...app, rating: selectedRating, comment: userComment, rated: "Yes" } : app
         );
 
         setAppointments(updatedAppointments);
         setRatedAppointments(new Set([...ratedAppointments, appointmentId]));
+        setRatedStatus(prevRatedStatus => ({
+          ...prevRatedStatus,
+          [appointmentId]: "Yes"
+        }));
         
         message.success('Rating submitted successfully');
 
@@ -473,10 +495,8 @@ function Appointments() {
   const renderRateDoctorColumn = (text, record) => {
     if (user.role !== "doctor") {
       // Check if the appointment is already rated
-      if (ratedAppointments.has(record.id)) {
-        return 'Done'; // Show "Done" if the doctor is already rated
-      }
-  
+      const isRated = ratedStatus[record.id] === "Yes";
+
       // Render the rating UI if not already rated
       return (
         <div>
@@ -485,6 +505,7 @@ function Appointments() {
             value={rating[record.id]}
             onChange={(value) => handleRatingChange(record.id, value)}
             placeholder="Rate"
+            disabled={isRated}
           >
             {[1, 2, 3, 4, 5].map(star => (
               <Option key={star} value={star}>{`${star} Star${star > 1 ? 's' : ''}`}</Option>
@@ -496,8 +517,9 @@ function Appointments() {
             onChange={(e) => handleCommentChange(record.id, e.target.value)}
             placeholder="Add a comment"
             style={{ marginTop: 8 }}
+            disabled={isRated}
           />
-          <Button type="primary" onClick={() => submitRating(record.id, false)}>
+          <Button type="primary" onClick={() => submitRating(record.id, false)} disabled={isRated}>
             Submit Rating
           </Button>
         </div>
@@ -505,7 +527,6 @@ function Appointments() {
     }
     return null;
   };
-  
 
   const columns = [
     {
@@ -567,6 +588,12 @@ function Appointments() {
       dataIndex: 'rateDoctor',
       key: 'rateDoctor',
       render: renderRateDoctorColumn, // Custom render function for rating
+    },
+    {
+      title: 'Rated',
+      dataIndex: 'rated',
+      key: 'rated',
+      render: (text, record) => ratedStatus[record.id] || "Not Yet", // Render "Yes" or "Not Yet"
     }
   ];
 

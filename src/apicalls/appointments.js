@@ -16,7 +16,12 @@ import firestoreDatabase from "../firebaseConfig";
 // Function to book a doctor appointment
 export const BookDoctorAppointment = async (payload) => {
   try {
-    await addDoc(collection(firestoreDatabase, "appointments"), payload);
+    // Include the 'rated' field with a default value of "Not Yet"
+    const appointmentData = {
+      ...payload,
+      rated: "Not Yet",
+    };
+    await addDoc(collection(firestoreDatabase, "appointments"), appointmentData);
     return { success: true, message: "Appointment booked successfully" };
   } catch (error) {
     return { success: false, message: error.message };
@@ -175,7 +180,7 @@ export const UpdateProblem = async (appointmentId, problem) => {
 };
 
 // Function to submit a rating for a doctor by a user
-export const SubmitRating = async (doctorId, userId, rating, comment) => {
+export const SubmitRating = async (doctorId, userId, rating, comment, appointmentId) => {
   try {
     const doctorRef = doc(firestoreDatabase, "doctors", doctorId);
     const doctorDoc = await getDoc(doctorRef);
@@ -203,6 +208,11 @@ export const SubmitRating = async (doctorId, userId, rating, comment) => {
         comment: comment,
         date: new Date(),
       }),
+    });
+
+    // Update the rated field in the appointment record
+    await updateDoc(doc(firestoreDatabase, "appointments", appointmentId), {
+      rated: "Yes",
     });
 
     return { success: true, message: "Rating submitted successfully.", alreadyRated: false };

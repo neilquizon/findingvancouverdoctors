@@ -147,6 +147,7 @@ function BookAppointment() {
         bookedOn: moment().format("DD-MM-YYYY hh:mm A"),
         problem,
         status: "pending",
+        rated: "Not Yet", // Default value for the Rated field
       };
       const response = await BookDoctorAppointment(payload);
       if (response.success) {
