@@ -7,6 +7,7 @@ import { ShowLoader } from "../../redux/loaderSlice";
 import { GetUserById } from "../../apicalls/users";
 import AppointmentsList from "./AppointmentsList";
 import { useNavigate } from "react-router-dom";
+import ChatSupport from "../Profile/ChatSupport"; // Import the ChatSupport component
 
 function Admin() {
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -38,7 +39,7 @@ function Admin() {
     isAdmin && (
       <div className="bg-white p-1">
         <Tabs>
-        <Tabs.TabPane tab="Appointments" key="1">
+          <Tabs.TabPane tab="Appointments" key="1">
             <AppointmentsList />
           </Tabs.TabPane>
           <Tabs.TabPane tab="Users" key="2">
@@ -47,7 +48,9 @@ function Admin() {
           <Tabs.TabPane tab="Doctors" key="3">
             <DoctorsList />
           </Tabs.TabPane>
-          
+          <Tabs.TabPane tab="Chat Support" key="4"> {/* New Tab for Chat Support */}
+            <ChatSupport /> {/* Add ChatSupport component */}
+          </Tabs.TabPane>
         </Tabs>
       </div>
     )

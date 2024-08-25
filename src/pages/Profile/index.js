@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Tabs, Form, Input, Rate } from "antd";
 import Appointments from "./Appointments";
 import DoctorForm from "../DoctorForm";
-import { GetDoctorById } from "../../apicalls/doctors"; // Import API call to get doctor details
+import { GetDoctorById } from "../../apicalls/doctors";
 import moment from "moment";
+import ChatSupport from "./ChatSupport"; // Adjust the import path as needed
+
 
 // Footer Component
 const Footer = () => (
@@ -16,7 +18,7 @@ function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
   const [user, setUser] = useState(null);
-  const [doctorDetails, setDoctorDetails] = useState(null); // State to store doctor details
+  const [doctorDetails, setDoctorDetails] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -181,6 +183,11 @@ function Profile() {
           )}
         </div>
       ),
+    },
+    {
+      label: 'Chat Support',  // New tab for Chat Support
+      key: '3',
+      children: <ChatSupport />, // Add the ChatSupport component here
     },
   ];
 
