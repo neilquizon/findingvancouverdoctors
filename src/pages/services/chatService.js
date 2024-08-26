@@ -2,8 +2,13 @@ import { doc, setDoc, updateDoc, getDoc, arrayUnion } from "firebase/firestore";
 import firestoreDatabase from "../../firebaseConfig"; // Adjust the path according to your structure
 
 // Function to send a message
-export const sendMessage = async (messageText, sender) => {
-  const chatDocId = "group_chat"; // Single document ID for all users and admins
+export const sendMessage = async (messageText, sender, userId) => {
+  if (!userId) {
+    console.error("sendMessage: userId is undefined");
+    return { success: false, message: "userId is undefined" };
+  }
+
+  const chatDocId = `chat_${userId}_admin`; // Unique document ID for each user-admin chat
   const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
 
   const messageData = {
@@ -13,19 +18,17 @@ export const sendMessage = async (messageText, sender) => {
   };
 
   try {
-    // Check if the document exists
-    const docSnapshot = await getDoc(chatDocRef);
-    if (docSnapshot.exists()) {
-      // If the document exists, update it by appending the new message to the messages array
-      await updateDoc(chatDocRef, {
-        messages: arrayUnion(messageData),
-      });
-    } else {
-      // If the document doesn't exist, create it with the new message as the first entry in the messages array
-      await setDoc(chatDocRef, {
-        messages: [messageData],
-      });
-    }
+    await updateDoc(chatDocRef, {
+      messages: arrayUnion(messageData),
+    }).catch(async (error) => {
+      if (error.code === "not-found") {
+        await setDoc(chatDocRef, {
+          messages: [messageData],
+        });
+      } else {
+        throw error;
+      }
+    });
 
     return { success: true, data: messageData };
   } catch (e) {
@@ -35,8 +38,13 @@ export const sendMessage = async (messageText, sender) => {
 };
 
 // Function to get all messages
-export const getMessages = async () => {
-  const chatDocId = "group_chat"; // Single document ID for all users and admins
+export const getMessages = async (userId) => {
+  if (!userId) {
+    console.error("getMessages: userId is undefined");
+    return { success: false, message: "userId is undefined" };
+  }
+
+  const chatDocId = `chat_${userId}_admin`; // Unique document ID for each user-admin chat
   const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
 
   try {

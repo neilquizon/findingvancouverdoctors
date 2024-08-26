@@ -1,28 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { message } from "antd";
-import { doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot } from "firebase/firestore";
 import firestoreDatabase from "../../firebaseConfig"; // Adjust the path as needed
 
-function ChatSupport() {
+function ChatSupport({ userId }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const user = JSON.parse(localStorage.getItem("user"));
-  const chatDocId = "group_chat"; // Single document ID for all users and admins
+  const currentUser = JSON.parse(localStorage.getItem("user"));
+
+  const chatDocId = `chat_${userId}_admin`; // Unique document ID for each user-admin chat
 
   useEffect(() => {
-    if (user) {
-      const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
-
-      // Listen for real-time updates to the chat document
-      const unsubscribe = onSnapshot(chatDocRef, (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          setMessages(docSnapshot.data().messages || []);
-        }
-      });
-
-      return () => unsubscribe(); // Clean up the listener on unmount
+    // Ensure that userId and currentUser are defined inside useEffect
+    if (!userId || !currentUser) {
+      console.error("userId or currentUser is undefined");
+      return;
     }
-  }, [user]);
+
+    const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
+
+    // Listen for real-time updates to the chat document
+    const unsubscribe = onSnapshot(chatDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setMessages(docSnapshot.data().messages || []);
+      }
+    });
+
+    return () => unsubscribe(); // Clean up the listener on unmount
+  }, [userId, currentUser, chatDocId]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -31,24 +36,22 @@ function ChatSupport() {
 
     const messageData = {
       text: newMessage,
-      sender: user.role === "admin" ? "admin" : user.name || user.id, // Distinguish sender (user or admin)
+      sender: currentUser.role === "admin" ? "admin" : currentUser.name || currentUser.id,
       timestamp: new Date(),
     };
 
     try {
-      // Check if the document exists
-      const docSnapshot = await getDoc(chatDocRef);
-      if (docSnapshot.exists()) {
-        // If the document exists, update it
-        await updateDoc(chatDocRef, {
-          messages: arrayUnion(messageData),
-        });
-      } else {
-        // If the document doesn't exist, create it with the first message
-        await setDoc(chatDocRef, {
-          messages: [messageData],
-        });
-      }
+      await updateDoc(chatDocRef, {
+        messages: arrayUnion(messageData),
+      }).catch(async (error) => {
+        if (error.code === "not-found") {
+          await setDoc(chatDocRef, {
+            messages: [messageData],
+          });
+        } else {
+          throw error;
+        }
+      });
 
       setNewMessage(""); // Clear the input after sending the message
     } catch (error) {
@@ -56,8 +59,13 @@ function ChatSupport() {
     }
   };
 
-  if (!user) {
+  // Early return based on conditional checks, but after hooks are called
+  if (!currentUser) {
     return <div>Please log in to access chat support.</div>;
+  }
+
+  if (!userId) {
+    return <div>Error: userId is undefined</div>;
   }
 
   return (
@@ -65,7 +73,7 @@ function ChatSupport() {
       <div className="chat-messages" style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1rem' }}>
         {messages.map((msg, index) => (
           <div key={index} className="chat-message" style={{ marginBottom: '0.5rem' }}>
-            <strong>{msg.sender === (user.name || user.id) ? "You" : msg.sender}:</strong> {msg.text}
+            <strong>{msg.sender === (currentUser.name || currentUser.id) ? "You" : msg.sender}:</strong> {msg.text}
           </div>
         ))}
       </div>

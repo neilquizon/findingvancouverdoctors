@@ -6,7 +6,6 @@ import { GetDoctorById } from "../../apicalls/doctors";
 import moment from "moment";
 import ChatSupport from "./ChatSupport"; // Adjust the import path as needed
 
-
 // Footer Component
 const Footer = () => (
   <footer style={{ backgroundColor: '#004182', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', textAlign: 'center' }}>
@@ -187,7 +186,7 @@ function Profile() {
     {
       label: 'Chat Support',  // New tab for Chat Support
       key: '3',
-      children: <ChatSupport />, // Add the ChatSupport component here
+      children: <ChatSupport userId={user.id} />, // Pass the userId to ChatSupport component
     },
   ];
 
