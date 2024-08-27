@@ -8,30 +8,28 @@ function ChatSupport({ userId }) {
   const [newMessage, setNewMessage] = useState("");
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  const chatDocId = `chat_${userId}_admin`; // Unique document ID for each user-admin chat
-
   useEffect(() => {
-    // Ensure that userId and currentUser are defined inside useEffect
-    if (!userId || !currentUser) {
-      console.error("userId or currentUser is undefined");
-      return;
-    }
+    if (!currentUser || !userId) return;
 
+    const chatDocId = `chat_${userId}_admin`;
     const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
 
     // Listen for real-time updates to the chat document
     const unsubscribe = onSnapshot(chatDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         setMessages(docSnapshot.data().messages || []);
+      } else {
+        setMessages([]); // If no messages, set empty array
       }
     });
 
     return () => unsubscribe(); // Clean up the listener on unmount
-  }, [userId, currentUser, chatDocId]);
+  }, [userId, currentUser]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
+    const chatDocId = `chat_${userId}_admin`;
     const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
 
     const messageData = {
@@ -59,13 +57,8 @@ function ChatSupport({ userId }) {
     }
   };
 
-  // Early return based on conditional checks, but after hooks are called
   if (!currentUser) {
     return <div>Please log in to access chat support.</div>;
-  }
-
-  if (!userId) {
-    return <div>Error: userId is undefined</div>;
   }
 
   return (

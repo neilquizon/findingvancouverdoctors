@@ -6,16 +6,18 @@ import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { GetUserById, GetAllUsers } from "../../apicalls/users"; // Assuming you have GetAllUsers API
 import AppointmentsList from "./AppointmentsList";
-import { useNavigate } from "react-router-dom";
 import ChatSupport from "../Profile/ChatSupport"; // Import the ChatSupport component
+import { collection, onSnapshot } from "firebase/firestore"; // Import Firestore functions
+import firestoreDatabase from "../../firebaseConfig"; // Import your Firestore configuration
 
 function Admin() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null); // State for selected user ID
-  const [userList, setUserList] = useState([]); // State for list of users, initialized as an empty array
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [userList, setUserList] = useState([]);
+  const [activeChats, setActiveChats] = useState([]);
+  const [highlightedChat, setHighlightedChat] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const checkIsAdmin = async () => {
     try {
@@ -23,9 +25,9 @@ function Admin() {
       const response = await GetUserById(user.id);
       if (response.success && response.data.role === "admin") {
         setIsAdmin(true);
-        const usersResponse = await GetAllUsers(); // Fetch all users (mocked or real)
+        const usersResponse = await GetAllUsers();
         if (usersResponse.success) {
-          setUserList(usersResponse.data || []); // Ensure that userList is always an array
+          setUserList(usersResponse.data || []);
         } else {
           message.error("Failed to fetch users");
         }
@@ -43,9 +45,26 @@ function Admin() {
     checkIsAdmin();
   }, []);
 
-  const handleUserSelect = (userId) => {
-    setSelectedUserId(userId);
-  };
+  useEffect(() => {
+    if (isAdmin) {
+      // Listen for all active chat documents where the admin is involved
+      const unsubscribe = onSnapshot(collection(firestoreDatabase, "chats"), (snapshot) => {
+        const chatList = [];
+        snapshot.forEach((doc) => {
+          const docId = doc.id;
+          if (docId.endsWith("_admin") && (doc.data().messages || []).length > 0) {
+            chatList.push({ chatId: docId, lastMessageTime: doc.data().messages.slice(-1)[0].timestamp });
+            if (docId !== selectedUserId) {
+              setHighlightedChat(docId); // Highlight the chat that just got updated
+            }
+          }
+        });
+        setActiveChats(chatList.sort((a, b) => b.lastMessageTime - a.lastMessageTime)); // Sort by most recent message
+      });
+
+      return () => unsubscribe(); // Clean up the listener on unmount
+    }
+  }, [isAdmin, selectedUserId]);
 
   return (
     isAdmin && (
@@ -60,33 +79,44 @@ function Admin() {
           <Tabs.TabPane tab="Doctors" key="3">
             <DoctorsList />
           </Tabs.TabPane>
-          <Tabs.TabPane tab="Chat Support" key="4"> {/* New Tab for Chat Support */}
-            {/* User selection dropdown */}
-            <div>
-              <h3>Select a User to Chat With:</h3>
-              <select
-                onChange={(e) => handleUserSelect(e.target.value)}
-                value={selectedUserId || ""}
-              >
-                <option value="" disabled>Select a user</option>
-                {userList.length > 0 ? (
-                  userList.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))
+          <Tabs.TabPane tab="Chat Support" key="4">
+            <div style={{ display: 'flex', height: '100vh' }}>
+              <div style={{ width: '25%', borderRight: '1px solid #ccc', padding: '1rem' }}>
+                <h3>Active Chats</h3>
+                <ul style={{ listStyleType: 'none', padding: 0 }}>
+                  {activeChats.length > 0 ? (
+                    activeChats.map(({ chatId }) => {
+                      const userId = chatId.replace('chat_', '').replace('_admin', '');
+                      return (
+                        <li
+                          key={chatId}
+                          onClick={() => {
+                            setSelectedUserId(userId);
+                            setHighlightedChat(null); // Remove highlight after selecting
+                          }}
+                          style={{
+                            padding: '0.5rem',
+                            cursor: 'pointer',
+                            backgroundColor: highlightedChat === chatId ? '#ffeb3b' : selectedUserId === userId ? '#e6f7ff' : 'transparent',
+                          }}
+                        >
+                          {userList.find(u => u.id === userId)?.name || 'Unknown User'}
+                        </li>
+                      );
+                    })
+                  ) : (
+                    <li>No active chats available</li>
+                  )}
+                </ul>
+              </div>
+              <div style={{ flex: 1, padding: '1rem' }}>
+                {selectedUserId ? (
+                  <ChatSupport userId={selectedUserId} />
                 ) : (
-                  <option value="" disabled>No users available</option>
+                  <div>Please select a chat to start the conversation</div>
                 )}
-              </select>
+              </div>
             </div>
-
-            {/* Conditionally render the ChatSupport component if a user is selected */}
-            {selectedUserId ? (
-              <ChatSupport userId={selectedUserId} />
-            ) : (
-              <div>Please select a user to start the chat</div>
-            )}
           </Tabs.TabPane>
         </Tabs>
       </div>
