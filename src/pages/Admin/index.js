@@ -7,7 +7,7 @@ import { ShowLoader } from "../../redux/loaderSlice";
 import { GetUserById, GetAllUsers } from "../../apicalls/users"; // Assuming you have GetAllUsers API
 import AppointmentsList from "./AppointmentsList";
 import ChatSupport from "../Profile/ChatSupport"; // Import the ChatSupport component
-import { collection, onSnapshot } from "firebase/firestore"; // Import Firestore functions
+import { collection, onSnapshot, deleteDoc, doc } from "firebase/firestore"; // Import Firestore functions
 import firestoreDatabase from "../../firebaseConfig"; // Import your Firestore configuration
 
 function Admin() {
@@ -66,6 +66,18 @@ function Admin() {
     }
   }, [isAdmin, selectedUserId]);
 
+  const handleClearChat = async (userId) => {
+    const chatDocId = `chat_${userId}_admin`;
+    const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
+
+    try {
+      await deleteDoc(chatDocRef); // Delete the chat document
+      message.success("Chat cleared and document deleted successfully");
+    } catch (error) {
+      message.error("Failed to clear chat: " + error.message);
+    }
+  };
+
   return (
     isAdmin && (
       <div className="bg-white p-1">
@@ -101,6 +113,9 @@ function Admin() {
                           }}
                         >
                           {userList.find(u => u.id === userId)?.name || 'Unknown User'}
+                          <button onClick={() => handleClearChat(userId)} style={{ marginLeft: '10px' }}>
+                            Clear Chat
+                          </button>
                         </li>
                       );
                     })

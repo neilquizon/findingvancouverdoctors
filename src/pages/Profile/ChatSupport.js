@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { message } from "antd";
-import { doc, setDoc, updateDoc, arrayUnion, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, deleteDoc } from "firebase/firestore";
 import firestoreDatabase from "../../firebaseConfig"; // Adjust the path as needed
 
 function ChatSupport({ userId }) {
@@ -57,6 +57,19 @@ function ChatSupport({ userId }) {
     }
   };
 
+  const handleClearChat = async () => {
+    const chatDocId = `chat_${userId}_admin`;
+    const chatDocRef = doc(firestoreDatabase, "chats", chatDocId);
+
+    try {
+      await deleteDoc(chatDocRef);
+      message.success("Chat cleared and document deleted successfully");
+      setMessages([]); // Clear the UI as well
+    } catch (error) {
+      message.error("Failed to clear chat and delete document: " + error.message);
+    }
+  };
+
   if (!currentUser) {
     return <div>Please log in to access chat support.</div>;
   }
@@ -79,6 +92,11 @@ function ChatSupport({ userId }) {
           style={{ flex: 1, padding: '0.5rem' }}
         />
         <button onClick={handleSendMessage} style={{ padding: '0.5rem 1rem' }}>Send</button>
+        {currentUser.role === "admin" && (
+          <button onClick={handleClearChat} style={{ padding: '0.5rem 1rem', marginLeft: '10px' }}>
+            Clear Chat
+          </button>
+        )}
       </div>
     </div>
   );
