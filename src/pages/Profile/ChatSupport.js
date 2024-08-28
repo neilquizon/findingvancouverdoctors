@@ -78,8 +78,26 @@ function ChatSupport({ userId }) {
     <div>
       <div className="chat-messages" style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1rem' }}>
         {messages.map((msg, index) => (
-          <div key={index} className="chat-message" style={{ marginBottom: '0.5rem' }}>
-            <strong>{msg.sender === (currentUser.name || currentUser.id) ? "You" : msg.sender}:</strong> {msg.text}
+          <div
+            key={index}
+            className="chat-message"
+            style={{
+              marginBottom: '0.5rem',
+              display: 'flex',
+              justifyContent: msg.sender === (currentUser.name || currentUser.id) ? 'flex-end' : 'flex-start',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: msg.sender === (currentUser.name || currentUser.id) ? '#e6f7ff' : '#f0f0f0',
+                padding: '10px',
+                borderRadius: '10px',
+                maxWidth: '60%',
+                textAlign: 'left',
+              }}
+            >
+              <strong>{msg.sender === (currentUser.name || currentUser.id) ? "You" : msg.sender}:</strong> {msg.text}
+            </div>
           </div>
         ))}
       </div>
