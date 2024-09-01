@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { message, Tabs, Card, Row, Col, Statistic } from "antd";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"; // Import Recharts components
 import UsersList from "./UsersList";
 import DoctorsList from "./DoctorsList";
 import { useDispatch } from "react-redux";
@@ -145,6 +146,12 @@ function Admin() {
     }
   };
 
+  // Prepare data for the graph
+  const graphData = dashboardData.monthlyAppointments.map((count, index) => ({
+    name: moment().month(index).format('MMMM'),
+    Appointments: count,
+  }));
+
   return (
     isAdmin && (
       <div className="bg-white p-1">
@@ -199,19 +206,18 @@ function Admin() {
               </Col>
             </Row>
 
-            {/* Monthly Breakdown */}
-            <Row gutter={16} style={{ marginBottom: "16px" }}>
-              {dashboardData.monthlyAppointments.map((count, index) => (
-                <Col span={8} key={index}>
-                  <Card>
-                    <Statistic
-                      title={moment().month(index).format('MMMM')}
-                      value={count}
-                    />
-                  </Card>
-                </Col>
-              ))}
-            </Row>
+            {/* Monthly Breakdown Graph */}
+            <Card>
+              <h3>Monthly Appointments</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={graphData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="Appointments" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
           </Tabs.TabPane>
 
           <Tabs.TabPane tab="Appointments" key="2">
