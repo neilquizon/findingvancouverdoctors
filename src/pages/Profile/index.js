@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Form, Input, Rate } from "antd";
+import { Tabs, Form, Input, Rate, Row, Col, Card, Statistic } from "antd";
 import Appointments from "./Appointments";
 import DoctorForm from "../DoctorForm";
 import { GetDoctorById } from "../../apicalls/doctors";
+import { GetDoctorAppointments } from "../../apicalls/appointments"; // Use the specific API for fetching doctor appointments
 import moment from "moment";
-import ChatSupport from "./ChatSupport"; // Adjust the import path as needed
+import { Bar } from 'react-chartjs-2';
+import 'chart.js/auto';
+import ChatSupport from "./ChatSupport";
 
 // Footer Component
 const Footer = () => (
@@ -18,6 +21,13 @@ function Profile() {
   const [form] = Form.useForm();
   const [user, setUser] = useState(null);
   const [doctorDetails, setDoctorDetails] = useState(null);
+  const [activeKey, setActiveKey] = useState('2'); // Default to the Appointments tab
+  const [dashboardData, setDashboardData] = useState({
+    appointmentsThisYear: 0,
+    appointmentsThisMonth: 0,
+    appointmentsToday: 0,
+    monthlyAppointments: Array(12).fill(0), // Array to hold counts for each month
+  });
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -26,9 +36,11 @@ function Profile() {
       setUser(parsedUser);
       form.setFieldsValue(parsedUser);
 
-      // Fetch doctor details if the user is a doctor
+      // Fetch doctor details and dashboard data if the user is a doctor
       if (parsedUser.role === "doctor") {
         fetchDoctorDetails(parsedUser.id);
+        fetchDashboardData(parsedUser.id);
+        setActiveKey('1'); // Default to "Dashboard" if the user is a doctor
       }
     }
   }, [form]);
@@ -43,6 +55,40 @@ function Profile() {
       }
     } catch (error) {
       console.error("Failed to fetch doctor details:", error);
+    }
+  };
+
+  const fetchDashboardData = async (doctorId) => {
+    try {
+      // Fetch all appointments for the doctor
+      const appointmentsRes = await GetDoctorAppointments(doctorId);
+
+      const today = moment().startOf('day');
+      const thisMonth = moment().startOf('month');
+      const thisYear = moment().startOf('year');
+
+      const monthlyAppointments = Array(12).fill(0); // Initialize an array to store appointments per month
+
+      const appointmentsThisYear = appointmentsRes.data.filter(appointment => {
+        const appointmentDate = moment(appointment.date);
+        if (appointmentDate.isSame(thisYear, 'year')) {
+          monthlyAppointments[appointmentDate.month()] += 1; // Increment the count for the respective month
+          return true;
+        }
+        return false;
+      }).length;
+
+      const appointmentsThisMonth = monthlyAppointments[thisMonth.month()];
+      const appointmentsToday = appointmentsRes.data.filter(appointment => moment(appointment.date).isSame(today, 'day')).length;
+
+      setDashboardData({
+        appointmentsThisYear,
+        appointmentsThisMonth,
+        appointmentsToday,
+        monthlyAppointments,
+      });
+    } catch (error) {
+      console.error("Failed to fetch dashboard data", error);
     }
   };
 
@@ -62,6 +108,24 @@ function Profile() {
   const handleCancel = () => {
     form.setFieldsValue(user);
     setIsEditing(false);
+  };
+
+  const renderChart = () => {
+    const labels = moment.months(); // Array of month names
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: "Appointments Per Month",
+          data: dashboardData.monthlyAppointments,
+          fill: false,
+          backgroundColor: '#0073b1',
+          borderColor: '#0073b1',
+        },
+      ],
+    };
+
+    return <Bar data={data} />;
   };
 
   const buttonStyle = {
@@ -84,15 +148,55 @@ function Profile() {
     return <div>Loading...</div>;
   }
 
-  const tabsItems = [
+  let tabsItems = [
+    {
+      label: 'Dashboard',
+      key: '1',
+      children: (
+        <div>
+          <Row gutter={16} style={{ marginBottom: "16px" }}>
+            <Col span={8}>
+              <Card>
+                <Statistic
+                  title="Appointments This Year"
+                  value={dashboardData.appointmentsThisYear}
+                />
+              </Card>
+            </Col>
+            <Col span={8}>
+              <Card>
+                <Statistic
+                  title="Appointments This Month"
+                  value={dashboardData.appointmentsThisMonth}
+                />
+              </Card>
+            </Col>
+            <Col span={8}>
+              <Card>
+                <Statistic
+                  title="Appointments Today"
+                  value={dashboardData.appointmentsToday}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Monthly Breakdown Graph */}
+          <Card>
+            <h3>Monthly Appointments</h3>
+            {renderChart()}
+          </Card>
+        </div>
+      ),
+    },
     {
       label: 'Appointments',
-      key: '1',
+      key: '2',
       children: <Appointments />,
     },
     {
       label: 'Profile',
-      key: '2',
+      key: '3',
       children: user.role === "doctor" ? (
         <div className="my-1 bg-white p-1 flex flex-col gap-1">
           <DoctorForm />
@@ -184,15 +288,20 @@ function Profile() {
       ),
     },
     {
-      label: 'Chat Support',  // New tab for Chat Support
-      key: '3',
-      children: <ChatSupport userId={user.id} />, // Pass the userId to ChatSupport component
+      label: 'Chat Support',
+      key: '4',
+      children: <ChatSupport userId={user.id} />,
     },
   ];
 
+  // Filter out "Dashboard" tab if user is not a doctor
+  if (user.role !== "doctor") {
+    tabsItems = tabsItems.filter(item => item.key !== '1');
+  }
+
   return (
     <div>
-      <Tabs items={tabsItems} />
+      <Tabs items={tabsItems} activeKey={activeKey} onChange={setActiveKey} />
       <Footer />
     </div>
   );

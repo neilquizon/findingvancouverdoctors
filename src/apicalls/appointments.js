@@ -13,6 +13,17 @@ import {
 import axios from 'axios';
 import firestoreDatabase from "../firebaseConfig";
 
+// Function to get appointment statistics for a specific doctor
+export const getAppointmentsStats = async (doctorId) => {
+  try {
+    const response = await axios.get(`/api/appointments/stats/${doctorId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching appointments stats:', error);
+    return null;
+  }
+};
+
 // Function to book a doctor appointment
 export const BookDoctorAppointment = async (payload) => {
   try {
