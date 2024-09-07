@@ -116,6 +116,9 @@ const Contact = () => {
         <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1rem', textAlign: 'center', color: '#004182' }}>
           Contact Us
         </h1>
+        <p style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          We’re here to help! Whether you have a question, feedback, or need assistance, feel free to reach out. Fill out the form below, and we’ll get back to you as soon as possible.
+        </p>
         <form onSubmit={handleSubmit}>
           <div>
             <label>Name</label>
