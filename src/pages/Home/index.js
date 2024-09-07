@@ -157,6 +157,20 @@ function Home() {
           <div className="flex gap-3 items-center">
             <h4
               className="uppercase cursor-pointer"
+              onClick={() => navigate("/about")}
+              style={{ color: "white", textDecoration: "none" }}
+            >
+              ABOUT
+            </h4>
+            <h4
+              className="uppercase cursor-pointer"
+              onClick={() => navigate("/contact")}
+              style={{ color: "white", textDecoration: "none" }}
+            >
+              CONTACT
+            </h4>
+            <h4
+              className="uppercase cursor-pointer"
               onClick={() => navigate("/login")}
               style={{ color: "white", textDecoration: "none" }}
             >

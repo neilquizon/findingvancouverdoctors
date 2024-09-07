@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, message, Input, Button, Form } from 'antd'; // Import Modal, message, Form, Input, and Button from antd
-import emailjs from 'emailjs-com'; // Import EmailJS
+import { Modal, message } from 'antd'; // Import Modal and message from antd
 
 // Updated Footer Component
 const Footer = () => (
@@ -10,11 +9,9 @@ const Footer = () => (
   </footer>
 );
 
-const Contact = () => {
-  const [form] = Form.useForm();
+const About = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
-  const [loading, setLoading] = useState(false);
 
   const handleLogout = () => {
     Modal.confirm({
@@ -24,37 +21,6 @@ const Contact = () => {
         localStorage.removeItem("user");
         navigate("/");
       },
-    });
-  };
-
-  const onFinish = (values) => {
-    const { email, subject, message: userMessage } = values;
-    
-    const templateParams = {
-      from_email: email,     // User's email from form input
-      subject,               // Subject from form input
-      message: userMessage,  // Message from form input
-    };
-
-    setLoading(true);
-
-    // Send email using EmailJS
-    emailjs.send(
-      'service_7rqzzbn',       // Your EmailJS Service ID
-      'template_izpot6c',      // Your EmailJS Template ID
-      templateParams, 
-      'MfjeugCZV3OLQrm7O'      // Your EmailJS User ID
-    )
-    .then((response) => {
-      console.log('Email sent successfully:', response.status, response.text);
-      message.success('Message sent successfully!');
-      form.resetFields();
-      setLoading(false);
-    })
-    .catch((error) => {
-      console.error('Failed to send email:', error);
-      message.error('Failed to send the message. Please try again.');
-      setLoading(false);
     });
   };
 
@@ -125,43 +91,27 @@ const Contact = () => {
       {/* Content Section */}
       <div className="content" style={{ padding: '3rem 2rem', maxWidth: '900px', margin: 'auto', backgroundColor: 'white', borderRadius: '8px', marginTop: '2rem', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1rem', textAlign: 'center', color: '#004182' }}>
-          Contact Us
+          About Finding Vancouver Doctor
         </h1>
         <p style={{ fontSize: '1rem', lineHeight: '1.6', color: '#333' }}>
-          Have any questions or need assistance? Send us a message, and we’ll get back to you as soon as possible.
+          <strong>Finding Vancouver Doctor</strong> is a web application designed to make it easier for Vancouver residents to find family doctors and book appointments online. With healthcare accessibility being a challenge, this platform was created to bridge the gap between patients and healthcare providers, simplifying the appointment scheduling process.
         </p>
-        
-        <Form form={form} onFinish={onFinish} layout="vertical" style={{ marginTop: '2rem' }}>
-          <Form.Item
-            label="Your Email"
-            name="email"
-            rules={[{ required: true, message: 'Please enter your email address!' }, { type: 'email', message: 'Please enter a valid email!' }]}
-          >
-            <Input placeholder="Enter your email" />
-          </Form.Item>
-          
-          <Form.Item
-            label="Subject"
-            name="subject"
-            rules={[{ required: true, message: 'Please enter a subject!' }]}
-          >
-            <Input placeholder="Enter the subject" />
-          </Form.Item>
-          
-          <Form.Item
-            label="Message"
-            name="message"
-            rules={[{ required: true, message: 'Please enter your message!' }]}
-          >
-            <Input.TextArea rows={5} placeholder="Enter your message" />
-          </Form.Item>
-          
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
-              Send Message
-            </Button>
-          </Form.Item>
-        </Form>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: '2rem', color: '#004182' }}>Our Mission</h2>
+        <p style={{ fontSize: '1rem', lineHeight: '1.6', color: '#333' }}>
+          Our mission is to enhance patient access to primary healthcare in Vancouver by offering a streamlined, user-friendly platform where individuals can easily locate doctors, check their availability, and book appointments with just a few clicks.
+        </p>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: '2rem', color: '#004182' }}>Key Features of the App</h2>
+        <ul style={{ fontSize: '1rem', lineHeight: '1.6', color: '#333', paddingLeft: '20px' }}>
+          <li>Search for available doctors by name, specialization, or available dates.</li>
+          <li>View detailed doctor profiles without needing to log in.</li>
+          <li>Easily register and log in to book appointments.</li>
+          <li>Rate and review doctors after appointments to help others make informed decisions.</li>
+          <li>Access real-time chat support for any questions or issues.</li>
+        </ul>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: '2rem', color: '#004182' }}>Why We Created Finding Vancouver Doctor</h2>
+        <p style={{ fontSize: '1rem', lineHeight: '1.6', color: '#333' }}>
+          The healthcare system can be difficult to navigate, and finding a family doctor with available appointment times is often a challenge. By creating this app, we aim to reduce the time and effort patients spend searching for doctors and make the entire process more transparent and efficient.
+        </p>
       </div>
 
       {/* Footer */}
@@ -170,4 +120,4 @@ const Contact = () => {
   );
 };
 
-export default Contact;
+export default About;
