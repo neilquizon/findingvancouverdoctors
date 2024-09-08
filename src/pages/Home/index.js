@@ -211,7 +211,8 @@ function Home() {
             selected={selectedDate}
             onChange={handleDateChange}
             placeholderText="Select date"
-            style={{ maxWidth: '200px' }}
+            style={{ maxWidth: '200px' }} // Input styling
+            popperPlacement="bottom-end" // Correctly place the popper
           />
         </div>
         <Row gutter={[16, 16]} style={{ margin: '1rem 0' }}>
