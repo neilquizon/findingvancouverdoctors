@@ -117,7 +117,7 @@ function Home() {
   };
 
   return (
-    <div className="layout p-1">
+    <div className="layout p-0">
       <div
         className="header p-2 flex justify-between items-center"
         style={{ backgroundColor: "#0077B5", flexWrap: 'wrap' }}
