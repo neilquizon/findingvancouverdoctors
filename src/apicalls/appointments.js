@@ -13,6 +13,22 @@ import {
 import axios from 'axios';
 import firestoreDatabase from "../firebaseConfig";
 
+// Function to send a notification
+const addNotification = async (userId, type, appointmentData) => {
+  try {
+    const notificationData = {
+      userId,
+      type, // e.g., 'New Appointment' or 'Appointment Updated'
+      data: appointmentData, // Include appointment details here
+      read: false, // Mark notification as unread
+      timestamp: new Date(),
+    };
+    await addDoc(collection(firestoreDatabase, "notifications"), notificationData);
+  } catch (error) {
+    console.error("Error adding notification: ", error.message);
+  }
+};
+
 // Function to get appointment statistics for a specific doctor
 export const getAppointmentsStats = async (doctorId) => {
   try {
@@ -24,15 +40,29 @@ export const getAppointmentsStats = async (doctorId) => {
   }
 };
 
-// Function to book a doctor appointment
+// Function to book a doctor appointment and send notifications
 export const BookDoctorAppointment = async (payload) => {
   try {
-    // Include the 'rated' field with a default value of "Not Yet"
     const appointmentData = {
       ...payload,
-      rated: "Not Yet",
+      rated: "Not Yet", // Default rating status
     };
-    await addDoc(collection(firestoreDatabase, "appointments"), appointmentData);
+
+    // Add appointment to Firestore
+    const appointmentRef = await addDoc(collection(firestoreDatabase, "appointments"), appointmentData);
+
+    // Get the full appointment data, including the generated ID
+    const fullAppointmentData = {
+      ...appointmentData,
+      id: appointmentRef.id,
+    };
+
+    // Send notification to doctor
+    await addNotification(appointmentData.doctorId, "New Appointment", fullAppointmentData);
+
+    // Send notification to user (patient)
+    await addNotification(appointmentData.userId, "Appointment Created", fullAppointmentData);
+
     return { success: true, message: "Appointment booked successfully" };
   } catch (error) {
     return { success: false, message: error.message };
@@ -103,13 +133,32 @@ export const GetUserAppointments = async (userId) => {
   }
 };
 
-// Function to update the status of an appointment
+// Function to update the status of an appointment and notify the doctor and patient
 export const UpdateAppointmentStatus = async (id, status) => {
   try {
     await updateDoc(doc(firestoreDatabase, "appointments", id), {
       status,
     });
-    return { success: true, message: "Appointment status updated" };
+
+    // Fetch appointment details
+    const appointmentDoc = await getDoc(doc(firestoreDatabase, "appointments", id));
+    if (appointmentDoc.exists()) {
+      const appointmentData = appointmentDoc.data();
+
+      // Include appointment ID in the data
+      const fullAppointmentData = {
+        ...appointmentData,
+        id: id,
+      };
+
+      // Notify the doctor
+      await addNotification(appointmentData.doctorId, "Appointment Updated", fullAppointmentData);
+
+      // Notify the user (patient)
+      await addNotification(appointmentData.userId, "Appointment Updated", fullAppointmentData);
+    }
+
+    return { success: true, message: "Appointment status updated and notifications sent" };
   } catch (error) {
     return { success: false, message: error.message };
   }
@@ -137,13 +186,32 @@ export const DeleteAppointment = async (id, doctorEmail, userEmail, cancelledBy)
   }
 };
 
-// Function to update the date of an appointment
+// Function to update the date of an appointment and notify doctor and patient
 export const UpdateAppointmentDate = async (id, date) => {
   try {
     await updateDoc(doc(firestoreDatabase, "appointments", id), {
       date,
     });
-    return { success: true, message: "Appointment date updated successfully" };
+
+    // Fetch appointment details
+    const appointmentDoc = await getDoc(doc(firestoreDatabase, "appointments", id));
+    if (appointmentDoc.exists()) {
+      const appointmentData = appointmentDoc.data();
+
+      // Include appointment ID in the data
+      const fullAppointmentData = {
+        ...appointmentData,
+        id: id,
+      };
+
+      // Notify the doctor
+      await addNotification(appointmentData.doctorId, "Appointment Date Updated", fullAppointmentData);
+
+      // Notify the user (patient)
+      await addNotification(appointmentData.userId, "Appointment Date Updated", fullAppointmentData);
+    }
+
+    return { success: true, message: "Appointment date updated and notifications sent" };
   } catch (error) {
     return { success: false, message: error.message };
   }

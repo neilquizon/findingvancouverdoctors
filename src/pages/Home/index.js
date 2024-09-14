@@ -151,7 +151,10 @@ function Home() {
           {user ? (
             <>
               {/* Notifications Icon */}
-              <Notifications userId={user.id} userRole={user.role} />
+              <Notifications
+                userId={user.uid || user.id || user._id}
+                userRole={user.role}
+              />
               <div className="flex gap-1 items-center">
                 <i
                   className="ri-shield-user-line"
@@ -304,10 +307,7 @@ function Home() {
                 </div>
                 <div style={{ textAlign: "left", width: "100%" }}>
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <Rate
-                      disabled
-                      value={calculateAverageRating(doctor)}
-                    />
+                    <Rate disabled value={calculateAverageRating(doctor)} />
                     <span style={{ marginLeft: "0.5rem" }}>
                       {calculateAverageRating(doctor) || "0.0"}
                     </span>
