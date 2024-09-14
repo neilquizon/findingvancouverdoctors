@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { message, Modal } from "antd"; // Import Modal and message components from antd
+import Notifications from "../components/Notifications"; // Import Notifications component
 
 function ProtectedRoute({ children }) {
     const navigate = useNavigate();
@@ -46,6 +47,11 @@ function ProtectedRoute({ children }) {
                 </h2>
                 {user && (
                     <div className="flex gap-3 items-center" style={{ flexWrap: "wrap" }}>
+                        {/* Notifications Icon */}
+                        <Notifications 
+                            userId={user.uid || user.id || user._id} 
+                            userRole={user.role} 
+                        />
                         <div className="flex gap-1 items-center">
                             <i className="ri-shield-user-line" style={{ color: "white" }}></i>
                             <h4
