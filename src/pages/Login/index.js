@@ -35,15 +35,15 @@ function Login() {
                 message.success(response.message);
                 localStorage.setItem("user", JSON.stringify(response.data));
 
-                // Check if a doctor ID is stored in local storage
-                const selectedDoctorId = localStorage.getItem("selectedDoctorId");
-                if (selectedDoctorId) {
-                    // Navigate to the booking page for the selected doctor
-                    navigate(`/book-appointment/${selectedDoctorId}`);
-                    // Clear the stored doctor ID from local storage
-                    localStorage.removeItem("selectedDoctorId");
+                const user = response.data;
+
+                // Redirect based on user role
+                if (user.role === "doctor") {
+                    navigate("/profile"); // Redirect doctors to their profile/dashboard page
+                } else if (user.role === "admin") {
+                    navigate("/admin"); // Redirect admins to the admin page
                 } else {
-                    navigate("/");
+                    navigate("/"); // For other roles, navigate to the homepage
                 }
             } else {
                 throw new Error(response.message);
