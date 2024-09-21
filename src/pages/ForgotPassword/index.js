@@ -5,11 +5,20 @@ import { GetSecretQuestion, ValidateSecretAnswer, UpdatePassword } from "../../a
 import { ShowLoader } from "../../redux/loaderSlice";
 import { useDispatch } from "react-redux";
 import { AiOutlineHome } from "react-icons/ai"; // Import the home icon
+import logo from '../../logo.png'; // Import the logo
 
 // Header component
 const Header = () => (
     <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ color: 'white', fontSize: '1.6rem', margin: 0 }}>FINDING VANCOUVER DOCTOR</h1>
+        {/* Flexbox container for logo and text */}
+        <div className="flex items-center">
+            <img 
+                src={logo} 
+                alt="Logo" 
+                style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+            />
+            <h1 style={{ color: 'white', fontSize: '1.6rem', margin: 0 }}>FINDING VANCOUVER DOCTOR</h1>
+        </div>
         <Link to="/" style={{ color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <AiOutlineHome /> {/* Home icon */}
             <span style={{ marginLeft: '0.5rem', color: 'white' }}>HOME</span>

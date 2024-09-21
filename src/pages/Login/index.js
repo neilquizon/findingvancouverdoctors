@@ -5,10 +5,19 @@ import { LoginUser } from "../../apicalls/users";
 import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { AiOutlineHome } from "react-icons/ai"; // Import the home icon from react-icons
+import logo from '../../logo.png'; // Import the logo
 
 const Header = () => (
     <header style={{ backgroundColor: '#0073b1', color: 'white', padding: '1rem', fontFamily: 'Roboto, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ color: 'white', fontSize: '1.6rem' }}>FINDING VANCOUVER DOCTOR</h1>
+        {/* Flexbox container for logo and text */}
+        <div className="flex items-center">
+            <img 
+                src={logo} 
+                alt="Logo" 
+                style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+            />
+            <h1 style={{ color: 'white', fontSize: '1.6rem', margin: 0 }}>FINDING VANCOUVER DOCTOR</h1>
+        </div>
         <Link to="/" style={{ color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <AiOutlineHome /> {/* Home icon */}
             <span style={{ marginLeft: '0.5rem', color: 'white', fontSize: '1.1rem'  }}>HOME</span>

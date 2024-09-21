@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, message } from 'antd'; 
 import emailjs from 'emailjs-com';
+import logo from '../../logo.png'; // Import the logo
 
 // Footer Component
 const Footer = () => (
@@ -78,9 +79,17 @@ const Contact = () => {
     <div className="layout" style={{ fontFamily: 'Roboto, sans-serif', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       {/* Header */}
       <div className="header p-2 flex justify-between items-center" style={{ backgroundColor: "#0077B5", padding: '1rem 2rem', flexWrap: 'wrap' }}>
-        <h2 className="cursor-pointer" onClick={() => navigate("/")} style={{ color: "white", fontWeight: 700, margin: 0 }}>
-          FINDING VANCOUVER DOCTOR
-        </h2>
+        {/* Flexbox container for logo and text */}
+        <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
+          <img 
+            src={logo} 
+            alt="Logo" 
+            style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+          />
+          <h2 style={{ color: "white", fontWeight: 700, margin: 0, display: "flex", alignItems: "center" }}>
+            FINDING VANCOUVER DOCTOR
+          </h2>
+        </div>
         {user ? (
           <div className="flex gap-3 items-center" style={{ flexWrap: 'wrap' }}>
             <div className="flex gap-1 items-center">

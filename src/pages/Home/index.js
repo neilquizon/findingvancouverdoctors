@@ -9,6 +9,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { GetAllDoctors } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
 import Notifications from "../../components/Notifications"; // Import the Notifications component
+import logo from "../../logo.png"; // Import the logo
 
 const Footer = () => (
   <footer
@@ -139,14 +140,19 @@ function Home() {
         className="header p-2 flex justify-between items-center"
         style={{ backgroundColor: "#0077B5", flexWrap: "wrap" }}
       >
-        <h2
-          className="cursor-pointer"
-          onClick={() => navigate("/")}
-          style={{ color: "white" }}
-        >
-          <strong>FINDING VANCOUVER </strong>
-          <strong>DOCTOR</strong>
-        </h2>
+        {/* Flexbox container to align logo and text */}
+        <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+          />
+          <h2 style={{ color: "white", fontSize: "1.6rem", display: "flex", alignItems: "center" }}>
+            <strong>FINDING VANCOUVER DOCTOR</strong>
+            
+          </h2>
+        </div>
+
         <div className="flex gap-3 items-center" style={{ flexWrap: "wrap" }}>
           {user ? (
             <>

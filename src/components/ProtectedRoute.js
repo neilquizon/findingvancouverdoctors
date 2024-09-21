@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { message, Modal } from "antd"; // Import Modal and message components from antd
 import Notifications from "../components/Notifications"; // Import Notifications component
+import logo from "../logo.png"; // Import the logo
 
 function ProtectedRoute({ children }) {
     const navigate = useNavigate();
@@ -37,14 +38,21 @@ function ProtectedRoute({ children }) {
                     flexWrap: "wrap"  // Ensure wrapping on smaller screens
                 }}
             >
-                <h2
-                    className="cursor-pointer"
-                    onClick={() => navigate("/")}
-                    style={{ color: "white", fontSize: "1.6rem", marginBottom: "0.5rem" }} // Adjust font size
-                >
-                    <strong>FINDING VANCOUVER </strong>
-                    <strong>DOCTOR</strong>
-                </h2>
+                {/* Logo and Text Container */}
+                <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
+                    <img 
+                        src={logo} 
+                        alt="Logo" 
+                        style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+                    />
+                    <h2
+                        style={{ color: "white", fontSize: "1.6rem", marginBottom: "0.5rem" }} // Adjust font size
+                    >
+                        <strong>FINDING VANCOUVER </strong>
+                        <strong>DOCTOR</strong>
+                    </h2>
+                </div>
+
                 {user && (
                     <div className="flex gap-3 items-center" style={{ flexWrap: "wrap" }}>
                         {/* Notifications Icon */}
