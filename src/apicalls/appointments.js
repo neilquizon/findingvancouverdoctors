@@ -275,9 +275,7 @@ export const SubmitRating = async (doctorId, userId, rating, comment, appointmen
       (r) => r.userId === userId
     );
 
-    if (alreadyRated) {
-      return { success: false, message: "You have already rated this doctor.", alreadyRated: true };
-    }
+    
 
     // Add the rating to the doctor's ratings array
     await updateDoc(doctorRef, {
