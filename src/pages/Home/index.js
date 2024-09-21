@@ -145,7 +145,7 @@ function Home() {
           <img
             src={logo}
             alt="Logo"
-            style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+            style={{ height: "90px", marginRight: "10px" }} // Adjust logo size and spacing
           />
           <h2 style={{ color: "white", fontSize: "1.6rem", display: "flex", alignItems: "center" }}>
             <strong>FINDING VANCOUVER DOCTOR</strong>

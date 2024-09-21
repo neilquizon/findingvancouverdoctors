@@ -37,9 +37,9 @@ const About = () => {
           <img 
             src={logo} 
             alt="Logo" 
-            style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+            style={{ height: "90px", marginRight: "10px" }} // Adjust logo size and spacing
           />
-          <h2 style={{ color: "white", fontWeight: 700, margin: 0, display: "flex", alignItems: "center" }}>
+          <h2 style={{ fontSize: "1.6rem", color: "white", fontWeight: 700, margin: 0, display: "flex", alignItems: "center" }}>
             FINDING VANCOUVER DOCTOR
           </h2>
         </div>

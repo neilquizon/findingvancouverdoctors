@@ -14,7 +14,7 @@ const Header = () => (
             <img 
                 src={logo} 
                 alt="Logo" 
-                style={{ height: "80px", marginRight: "10px" }} // Adjust logo size and spacing
+                style={{ height: "90px", marginRight: "10px" }} // Adjust logo size and spacing
             />
             <h1 style={{ color: 'white', fontSize: '1.6rem', margin: 0 }}>FINDING VANCOUVER DOCTOR</h1>
         </div>
