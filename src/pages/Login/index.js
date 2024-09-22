@@ -1,3 +1,5 @@
+// src/pages/Login.js
+
 import { Button, Form, message } from "antd";
 import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -46,14 +48,28 @@ function Login() {
 
                 const user = response.data;
 
-                // Redirect based on user role
-                if (user.role === "doctor") {
-                    navigate("/profile"); // Redirect doctors to their profile/dashboard page
-                } else if (user.role === "admin") {
-                    navigate("/admin"); // Redirect admins to the admin page
+                // **Updated Code Starts Here**
+
+                // Check for selectedDoctorId in localStorage
+                const selectedDoctorId = localStorage.getItem("selectedDoctorId");
+                if (selectedDoctorId) {
+                    // Remove the selectedDoctorId from localStorage
+                    localStorage.removeItem("selectedDoctorId");
+                    // Redirect to the booking page for the selected doctor
+                    navigate(`/book-appointment/${selectedDoctorId}`);
                 } else {
-                    navigate("/"); // For other roles, navigate to the homepage
+                    // Redirect based on user role
+                    if (user.role === "doctor") {
+                        navigate("/profile"); // Redirect doctors to their profile/dashboard page
+                    } else if (user.role === "admin") {
+                        navigate("/admin"); // Redirect admins to the admin page
+                    } else {
+                        navigate("/"); // For other roles, navigate to the homepage
+                    }
                 }
+
+                // **Updated Code Ends Here**
+
             } else {
                 throw new Error(response.message);
             }
