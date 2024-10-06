@@ -150,9 +150,9 @@ function Home() {
 
   const settings = {
     dots: true,
-    infinite: true,
+    infinite: false, // Disable infinite looping to avoid repeats
     speed: 500,
-    slidesToShow: 3,
+    slidesToShow: Math.min(3, doctors.length), // Ensure it doesn't try to show more doctors than available
     slidesToScroll: 1,
     nextArrow: <Arrow icon={<RightOutlined />} />,
     prevArrow: <Arrow icon={<LeftOutlined />} />,
@@ -160,13 +160,13 @@ function Home() {
       {
         breakpoint: 768,
         settings: {
-          slidesToShow: 1,
+          slidesToShow: Math.min(1, doctors.length),
         },
       },
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: 2,
+          slidesToShow: Math.min(2, doctors.length),
         },
       },
     ],
@@ -178,12 +178,11 @@ function Home() {
         className="header p-2 flex justify-between items-center"
         style={{ backgroundColor: "#0077B5", flexWrap: "wrap" }}
       >
-        {/* Flexbox container to align logo and text */}
         <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
           <img
             src={logo}
             alt="Logo"
-            style={{ height: "90px", marginRight: "10px" }} // Adjust logo size and spacing
+            style={{ height: "90px", marginRight: "10px" }}
           />
           <h2 style={{ color: "white", fontSize: "1.6rem", display: "flex", alignItems: "center" }}>
             <strong>FINDING VANCOUVER DOCTOR</strong>
@@ -193,16 +192,9 @@ function Home() {
         <div className="flex gap-3 items-center" style={{ flexWrap: "wrap" }}>
           {user ? (
             <>
-              {/* Notifications Icon */}
-              <Notifications
-                userId={user.uid || user.id || user._id}
-                userRole={user.role}
-              />
+              <Notifications userId={user.uid || user.id || user._id} userRole={user.role} />
               <div className="flex gap-1 items-center">
-                <i
-                  className="ri-shield-user-line"
-                  style={{ color: "white" }}
-                ></i>
+                <i className="ri-shield-user-line" style={{ color: "white" }}></i>
                 <h4
                   className="uppercase cursor-pointer underline"
                   onClick={() => {
@@ -313,8 +305,8 @@ function Home() {
             selected={selectedDate}
             onChange={handleDateChange}
             placeholderText="Select date"
-            style={{ maxWidth: "200px" }} // Input styling
-            popperPlacement="bottom-end" // Correctly place the popper
+            style={{ maxWidth: "200px" }}
+            popperPlacement="bottom-end"
           />
         </div>
         <h3 style={{ textAlign: "center", marginBottom: "1rem" }}>Featured Doctors</h3>
