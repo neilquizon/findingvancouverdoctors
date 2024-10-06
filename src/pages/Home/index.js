@@ -1,6 +1,6 @@
 // src/pages/Home.js
 
-import { Col, message, Row, Modal, Rate } from "antd";
+import { message, Modal, Rate } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,10 @@ import { GetAllDoctors } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
 import Notifications from "../../components/Notifications"; // Import the Notifications component
 import logo from "../../logo.png"; // Import the logo
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import Slider from "react-slick";
+import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 
 const Footer = () => (
   <footer
@@ -134,6 +138,40 @@ function Home() {
     }
   };
 
+  const Arrow = ({ className, style, onClick, icon }) => (
+    <div
+      className={className}
+      style={{ ...style, display: "block", fontSize: "2rem", color: "#004182" }}
+      onClick={onClick}
+    >
+      {icon}
+    </div>
+  );
+
+  const settings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 3,
+    slidesToScroll: 1,
+    nextArrow: <Arrow icon={<RightOutlined />} />,
+    prevArrow: <Arrow icon={<LeftOutlined />} />,
+    responsive: [
+      {
+        breakpoint: 768,
+        settings: {
+          slidesToShow: 1,
+        },
+      },
+      {
+        breakpoint: 1024,
+        settings: {
+          slidesToShow: 2,
+        },
+      },
+    ],
+  };
+
   return (
     <div className="layout p-0">
       <div
@@ -149,7 +187,6 @@ function Home() {
           />
           <h2 style={{ color: "white", fontSize: "1.6rem", display: "flex", alignItems: "center" }}>
             <strong>FINDING VANCOUVER DOCTOR</strong>
-            
           </h2>
         </div>
 
@@ -238,12 +275,25 @@ function Home() {
             justifyContent: "space-between",
           }}
         >
-          <input
-            placeholder="Search doctors"
-            style={{ width: "100%", maxWidth: "400px", marginRight: "1rem" }}
-            value={searchQuery}
-            onChange={handleSearch}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <input
+              placeholder="Search doctors"
+              style={{ width: "100%", maxWidth: "400px" }}
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+            <button
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: "#004182",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Search
+            </button>
+          </div>
           {user && user.role !== "doctor" && user.role !== "admin" && (
             <button
               style={{
@@ -267,117 +317,127 @@ function Home() {
             popperPlacement="bottom-end" // Correctly place the popper
           />
         </div>
-        <Row gutter={[16, 16]} style={{ margin: "1rem 0" }}>
+        <h3 style={{ textAlign: "center", marginBottom: "1rem" }}>Featured Doctors</h3>
+        <Slider {...settings} className="slider-container" style={{ textAlign: "center" }}>
           {sortedDoctors.map((doctor) => (
-            <Col xs={24} sm={12} md={8} key={doctor.id}>
+            <div
+              key={doctor.id}
+              style={{
+                backgroundColor: "white",
+                padding: "1rem",
+                display: "inline-block",
+                width: "100%",
+                maxWidth: "260px",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ textAlign: "center" }}>
+                {doctor.profilePic && (
+                  <img
+                    src={doctor.profilePic}
+                    alt="Doctor Profile"
+                    style={{
+                      width: "30%",
+                      height: "auto",
+                      borderRadius: "10px",
+                      margin: "0 auto",
+                      display: "block",
+                    }}
+                  />
+                )}
+              </div>
               <div
                 style={{
-                  backgroundColor: "white",
-                  padding: "1rem",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "1rem",
-                  cursor: "pointer",
+                  alignItems: "flex-start",
+                  width: "100%",
+                  marginTop: "1rem",
                 }}
-                onClick={() => handleDoctorClick(doctor.id)}
               >
-                <div style={{ textAlign: "center" }}>
-                  {doctor.profilePic && (
-                    <img
-                      src={doctor.profilePic}
-                      alt="Doctor Profile"
-                      style={{
-                        width: "100px",
-                        height: "100px",
-                        borderRadius: "50%",
-                      }}
-                    />
-                  )}
+                <h2 style={{ textTransform: "uppercase", textAlign: "left" }}>
+                  {doctor.firstName} {doctor.lastName}
+                </h2>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <Rate disabled value={calculateAverageRating(doctor)} />
+                  <span style={{ marginLeft: "0.5rem" }}>
+                    {calculateAverageRating(doctor) || "0.0"}
+                  </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    width: "100%",
-                  }}
-                >
-                  <h2
-                    style={{
-                      textTransform: "uppercase",
-                      textAlign: "left",
-                    }}
-                  >
-                    {doctor.firstName} {doctor.lastName}
-                  </h2>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <Rate disabled value={calculateAverageRating(doctor)} />
-                    <span style={{ marginLeft: "0.5rem" }}>
-                      {calculateAverageRating(doctor) || "0.0"}
-                    </span>
-                  </div>
-                  <div>
-                    <small>
-                      {doctor.ratings?.length || 0} review
-                      {doctor.ratings?.length !== 1 ? "s" : ""}
-                    </small>
-                  </div>
-                </div>
-                <hr />
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Clinic : </b>
-                    {doctor.address}
-                  </h4>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Speciality : </b>
-                    {doctor.speciality}
-                  </h4>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Language : </b>
-                    {doctor.language}
-                  </h4>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Experience : </b>
-                    {doctor.experience} Years
-                  </h4>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Email : </b>
-                    {doctor.email}
-                  </h4>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Phone : </b>
-                    {doctor.phone}
-                  </h4>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Days Available : </b>
-                    {doctor.days.join(", ")}
-                  </h4>
-                </div>
-                <div style={{ textAlign: "left", width: "100%" }}>
-                  <h4>
-                    <b>Available Time : </b>
-                    {doctor.startTime} - {doctor.endTime}
-                  </h4>
+                <div>
+                  <small>
+                    {doctor.ratings?.length || 0} review
+                    {doctor.ratings?.length !== 1 ? "s" : ""}
+                  </small>
                 </div>
               </div>
-            </Col>
+              <hr />
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Clinic : </b>
+                  {doctor.address}
+                </h4>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Speciality : </b>
+                  {doctor.speciality}
+                </h4>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Language : </b>
+                  {doctor.language}
+                </h4>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Experience : </b>
+                  {doctor.experience} Years
+                </h4>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Email : </b>
+                  {doctor.email}
+                </h4>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Phone : </b>
+                  {doctor.phone}
+                </h4>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Days Available : </b>
+                  {doctor.days.join(", ")}
+                </h4>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <h4>
+                  <b>Available Time : </b>
+                  {doctor.startTime} - {doctor.endTime}
+                </h4>
+              </div>
+              <button
+                onClick={() => handleDoctorClick(doctor.id)}
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.5rem 1rem",
+                  backgroundColor: "#004182",
+                  color: "white",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Book Appointment
+              </button>
+            </div>
           ))}
-        </Row>
+        </Slider>
       </div>
       <Footer />
     </div>
