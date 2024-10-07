@@ -141,7 +141,23 @@ function Home() {
   const Arrow = ({ className, style, onClick, icon }) => (
     <div
       className={className}
-      style={{ ...style, display: "block", fontSize: "2rem", color: "#004182" }}
+      style={{
+        ...style,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontSize: "2rem",
+        color: "#004182",
+        position: "absolute",
+        top: "50%",
+        transform: "translateY(-50%)",
+        zIndex: 1,
+        width: "50px",
+        height: "50px",
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        borderRadius: "50%",
+        cursor: "pointer",
+      }}
       onClick={onClick}
     >
       {icon}
@@ -154,8 +170,8 @@ function Home() {
     speed: 500,
     slidesToShow: Math.min(3, doctors.length), // Ensure it doesn't try to show more doctors than available
     slidesToScroll: 1,
-    nextArrow: <Arrow icon={<RightOutlined />} />,
-    prevArrow: <Arrow icon={<LeftOutlined />} />,
+    nextArrow: <Arrow icon={<RightOutlined />} />, // Use right arrow for next
+    prevArrow: <Arrow icon={<LeftOutlined />} />, // Use left arrow for previous
     responsive: [
       {
         breakpoint: 768,
@@ -310,7 +326,7 @@ function Home() {
           />
         </div>
         <h3 style={{ textAlign: "center", marginBottom: "1rem" }}>Featured Doctors</h3>
-        <Slider {...settings} className="slider-container" style={{ textAlign: "center" }}>
+        <Slider {...settings} className="slider-container" style={{ textAlign: "center", position: "relative" }}>
           {sortedDoctors.map((doctor) => (
             <div
               key={doctor.id}
