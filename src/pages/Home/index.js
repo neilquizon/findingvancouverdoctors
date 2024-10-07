@@ -342,16 +342,17 @@ function Home() {
               <div style={{ textAlign: "center" }}>
                 {doctor.profilePic && (
                   <img
-                    src={doctor.profilePic}
-                    alt="Doctor Profile"
-                    style={{
-                      width: "30%",
-                      height: "auto",
-                      borderRadius: "10px",
-                      margin: "0 auto",
-                      display: "block",
-                    }}
-                  />
+                  src={doctor.profilePic}
+                  alt="Doctor Profile"
+                  style={{
+                    width: "150px",
+                    height: "150px",
+                    borderRadius: "10px",
+                    margin: "0 auto",
+                    display: "block",
+                    objectFit: "cover", // Ensures the image fills the area without distortion
+                  }}
+                />
                 )}
               </div>
               <div
