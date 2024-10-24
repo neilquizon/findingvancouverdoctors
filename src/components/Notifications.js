@@ -70,7 +70,7 @@ function Notifications({ userId, userRole }) {
                           ).format("YYYY-MM-DD")
                         : "Unknown"}
                     </p>
-                    <p>Time: {item.data?.time || "Unknown"}</p>
+                    
                   </div>
                 }
               />
