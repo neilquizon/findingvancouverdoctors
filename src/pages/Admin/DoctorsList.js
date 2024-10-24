@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { GetAllDoctors, UpdateDoctor } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
+import emailjs from 'emailjs-com'; // Import EmailJS
 import './DoctorsList.css'; // Ensure you create this CSS file
 
 // Footer Component
@@ -38,6 +39,34 @@ function DoctorsList() {
     }
   };
 
+  // Function to send email notifications
+  const sendEmailNotification = (email, firstName, status) => {
+    const templateParams = {
+      from_name: 'Finding Vancouver Doctor',  // Your service name
+      from_email: 'noreply@findingvancouverdoctor.com',  // Your sender email
+      to_email: email,  // Doctor's email (dynamic)
+      to_name: firstName,  // Doctor's first name (dynamic)
+      message: `Hello ${firstName}, your account has been ${status}. If you have any questions, please contact support.`,
+    };
+
+    console.log('Sending email with params:', templateParams);  // Log the template parameters for debugging
+
+    emailjs.send(
+      'service_7rqzzbn',       // Your EmailJS Service ID
+      'template_izpot6c',      // Your EmailJS Template ID
+      templateParams, 
+      'MfjeugCZV3OLQrm7O'      // Your EmailJS User ID
+    )
+    .then((response) => {
+      console.log('Email sent successfully:', response.status, response.text);
+      message.success('Email notification sent successfully');
+    })
+    .catch((error) => {
+      console.error('Failed to send email:', error);  // Log the error for debugging
+      message.error('Failed to send the email notification');
+    });
+  };
+
   const changeStatus = async (payload) => {
     try {
       dispatch(ShowLoader(true));
@@ -46,6 +75,9 @@ function DoctorsList() {
       if (response.success) {
         message.success(response.message);
         getData();
+
+        // Send email notification on status change
+        sendEmailNotification(payload.email, payload.firstName, payload.status);
       } else {
         throw new Error(response.message);
       }
