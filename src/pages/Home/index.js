@@ -8,8 +8,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { GetAllDoctors } from "../../apicalls/doctors";
 import { ShowLoader } from "../../redux/loaderSlice";
-import Notifications from "../../components/Notifications"; // Import the Notifications component
-import logo from "../../logo.png"; // Import the logo
+import Notifications from "../../components/Notifications"; 
+import logo from "../../logo.png"; 
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Slider from "react-slick";
@@ -35,6 +35,8 @@ function Home() {
   const [doctors, setDoctors] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
+  const [minRating, setMinRating] = useState(0); // rating filter
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
@@ -57,6 +59,7 @@ function Home() {
 
   useEffect(() => {
     getData();
+    // eslint-disable-next-line
   }, []);
 
   const handleSearch = (e) => {
@@ -78,16 +81,18 @@ function Home() {
     });
   };
 
+  // Helper function to compute the average rating
   const calculateAverageRating = (doctor) => {
     if (!doctor.ratings || doctor.ratings.length === 0) return 0;
-
     const totalRating = doctor.ratings.reduce(
       (sum, rating) => sum + rating.rating,
       0
     );
-    return (totalRating / doctor.ratings.length).toFixed(1);
+    // Return numeric average with one decimal place
+    return parseFloat((totalRating / doctor.ratings.length).toFixed(1));
   };
 
+  // Filter doctors: approved -> text search -> date -> rating
   const filteredDoctors = doctors
     .filter((doctor) => doctor.status === "approved")
     .filter((doctor) => {
@@ -98,6 +103,7 @@ function Home() {
         doctor.days?.map((day) => day.toLowerCase()).join(", ") || "";
       const availableTime = `${doctor.startTime} - ${doctor.endTime}`.toLowerCase();
 
+      // text-based search
       const matchesSearchQuery =
         fullName.includes(searchQuery) ||
         speciality.includes(searchQuery) ||
@@ -105,16 +111,26 @@ function Home() {
         daysAvailable.includes(searchQuery) ||
         availableTime.includes(searchQuery);
 
+      // date-based filter
       if (selectedDate) {
         const selectedDay = selectedDate
           .toLocaleDateString("en-US", { weekday: "long" })
           .toLowerCase();
-        return matchesSearchQuery && daysAvailable.includes(selectedDay);
+        if (!daysAvailable.includes(selectedDay)) {
+          return false;
+        }
+      }
+
+      // rating filter
+      const doctorAvgRating = calculateAverageRating(doctor);
+      if (doctorAvgRating < minRating) {
+        return false;
       }
 
       return matchesSearchQuery;
     });
 
+  // Sort filtered doctors alphabetically by name
   const sortedDoctors = filteredDoctors.sort((a, b) => {
     const fullNameA = `${a.firstName} ${a.lastName}`.toLowerCase();
     const fullNameB = `${b.firstName} ${b.lastName}`.toLowerCase();
@@ -166,12 +182,12 @@ function Home() {
 
   const settings = {
     dots: true,
-    infinite: false, // Disable infinite looping to avoid repeats
+    infinite: false,
     speed: 500,
-    slidesToShow: Math.min(3, doctors.length), // Ensure it doesn't try to show more doctors than available
+    slidesToShow: Math.min(3, doctors.length),
     slidesToScroll: 1,
-    nextArrow: <Arrow icon={<RightOutlined />} />, // Use right arrow for next
-    prevArrow: <Arrow icon={<LeftOutlined />} />, // Use left arrow for previous
+    nextArrow: <Arrow icon={<RightOutlined />} />,
+    prevArrow: <Arrow icon={<LeftOutlined />} />,
     responsive: [
       {
         breakpoint: 768,
@@ -190,6 +206,7 @@ function Home() {
 
   return (
     <div className="layout p-0">
+      {/* HEADER */}
       <div
         className="header p-2 flex justify-between items-center"
         style={{ backgroundColor: "#0077B5", flexWrap: "wrap" }}
@@ -200,7 +217,14 @@ function Home() {
             alt="Logo"
             style={{ height: "90px", marginRight: "10px" }}
           />
-          <h2 style={{ color: "white", fontSize: "1.6rem", display: "flex", alignItems: "center" }}>
+          <h2
+            style={{
+              color: "white",
+              fontSize: "1.6rem",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <strong>FINDING VANCOUVER DOCTOR</strong>
           </h2>
         </div>
@@ -208,7 +232,10 @@ function Home() {
         <div className="flex gap-3 items-center" style={{ flexWrap: "wrap" }}>
           {user ? (
             <>
-              <Notifications userId={user.uid || user.id || user._id} userRole={user.role} />
+              <Notifications
+                userId={user.uid || user.id || user._id}
+                userRole={user.role}
+              />
               <div className="flex gap-1 items-center">
                 <i className="ri-shield-user-line" style={{ color: "white" }}></i>
                 <h4
@@ -257,6 +284,8 @@ function Home() {
           )}
         </div>
       </div>
+
+      {/* CONTENT */}
       <div className="content my-1" style={{ padding: "1rem" }}>
         {user && (
           <div style={{ marginBottom: "1rem" }}>
@@ -275,6 +304,8 @@ function Home() {
             </button>
           </div>
         )}
+
+        {/* SEARCH & ACTIONS */}
         <div
           style={{
             display: "flex",
@@ -283,6 +314,7 @@ function Home() {
             justifyContent: "space-between",
           }}
         >
+          {/* Text search */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <input
               placeholder="Search doctors"
@@ -302,6 +334,8 @@ function Home() {
               Search
             </button>
           </div>
+
+          {/* Register as doctor button (only if user is not a doctor/admin) */}
           {user && user.role !== "doctor" && user.role !== "admin" && (
             <button
               style={{
@@ -316,6 +350,28 @@ function Home() {
             </button>
           )}
         </div>
+
+        {/* RATING SELECTOR */}
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ marginRight: "0.5rem" }}>Minimum Rating:</label>
+          <select
+            value={minRating}
+            onChange={(e) => setMinRating(Number(e.target.value))}
+            style={{
+              width: "150px", // <-- Decrease the dropdown width
+              padding: "0.25rem",
+            }}
+          >
+            <option value={0}>All Ratings</option>
+            <option value={1}>1 & Up</option>
+            <option value={2}>2 & Up</option>
+            <option value={3}>3 & Up</option>
+            <option value={4}>4 & Up</option>
+            <option value={5}>5 Stars Only</option>
+          </select>
+        </div>
+
+        {/* DATE PICKER */}
         <div style={{ marginBottom: "1rem" }}>
           <DatePicker
             selected={selectedDate}
@@ -325,8 +381,16 @@ function Home() {
             popperPlacement="bottom-end"
           />
         </div>
-        <h3 style={{ textAlign: "center", marginBottom: "1rem" }}>Featured Doctors</h3>
-        <Slider {...settings} className="slider-container" style={{ textAlign: "center", position: "relative" }}>
+
+        {/* FEATURED DOCTORS */}
+        <h3 style={{ textAlign: "center", marginBottom: "1rem" }}>
+          Featured Doctors
+        </h3>
+        <Slider
+          {...settings}
+          className="slider-container"
+          style={{ textAlign: "center", position: "relative" }}
+        >
           {sortedDoctors.map((doctor) => (
             <div
               key={doctor.id}
@@ -339,22 +403,25 @@ function Home() {
                 cursor: "pointer",
               }}
             >
+              {/* Profile Pic */}
               <div style={{ textAlign: "center" }}>
                 {doctor.profilePic && (
                   <img
-                  src={doctor.profilePic}
-                  alt="Doctor Profile"
-                  style={{
-                    width: "150px",
-                    height: "150px",
-                    borderRadius: "10px",
-                    margin: "0 auto",
-                    display: "block",
-                    objectFit: "cover", // Ensures the image fills the area without distortion
-                  }}
-                />
+                    src={doctor.profilePic}
+                    alt="Doctor Profile"
+                    style={{
+                      width: "150px",
+                      height: "150px",
+                      borderRadius: "10px",
+                      margin: "0 auto",
+                      display: "block",
+                      objectFit: "cover",
+                    }}
+                  />
                 )}
               </div>
+
+              {/* Name */}
               <div
                 style={{
                   display: "flex",
@@ -368,6 +435,8 @@ function Home() {
                   {doctor.firstName} {doctor.lastName}
                 </h2>
               </div>
+
+              {/* Rating display */}
               <div style={{ textAlign: "left", width: "100%" }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <Rate disabled value={calculateAverageRating(doctor)} />
@@ -382,7 +451,10 @@ function Home() {
                   </small>
                 </div>
               </div>
+
               <hr />
+
+              {/* Doctor Info */}
               <div style={{ textAlign: "left", width: "100%" }}>
                 <h4>
                   <b>Clinic : </b>
@@ -431,6 +503,7 @@ function Home() {
                   {doctor.startTime} - {doctor.endTime}
                 </h4>
               </div>
+
               <button
                 onClick={() => handleDoctorClick(doctor.id)}
                 style={{
@@ -448,6 +521,8 @@ function Home() {
           ))}
         </Slider>
       </div>
+
+      {/* FOOTER */}
       <Footer />
     </div>
   );
