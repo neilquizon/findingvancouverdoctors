@@ -1,8 +1,24 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
-import { Table, message, Modal, Select, Input, Button, DatePicker } from 'antd';
-import { GetDoctorAppointments, GetUserAppointments, UpdateAppointmentStatus, DeleteAppointment, SaveDoctorNotes, SubmitRating } from '../../apicalls/appointments';
+import {
+  Table,
+  message,
+  Modal,
+  Select,
+  Input,
+  Button,
+  DatePicker,
+  Tooltip,
+} from 'antd';
+import {
+  GetDoctorAppointments,
+  GetUserAppointments,
+  UpdateAppointmentStatus,
+  DeleteAppointment,
+  SaveDoctorNotes,
+  SubmitRating,
+} from '../../apicalls/appointments';
 import { GetDoctorById } from '../../apicalls/doctors';
 import { doc, updateDoc } from 'firebase/firestore';
 import firestoreDatabase from '../../firebaseConfig';
@@ -10,12 +26,53 @@ import emailjs from 'emailjs-com';
 import './Appointments.css';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
+/** 
+ * =============================================================================
+ * 1) PROFANITY FILTER SETUP
+ * =============================================================================
+ * Here is our custom profanity list and checker function. 
+ * - If you want to block additional words, add them to PROFANITY_LIST.
+ * - This approach blocks "bitch" but NOT "bitching" unless you add "bitching" too.
+ * - Punctuation (e.g., "bitch!") and case (e.g., "BITCH") are handled automatically.
+ */
+const PROFANITY_LIST = [
+  'bitch',
+  'shit',
+  'damn',
+  'crap',
+  'fuck',
+  'asshole',
+  'hell',
+  // add or remove words as needed
+];
+
+function containsProfanity(text) {
+  if (!text) return false;
+
+  // Lowercase for case-insensitive match
+  let lowerText = text.toLowerCase();
+
+  // Remove punctuation so "bitch!" => "bitch"
+  lowerText = lowerText.replace(/[^\w\s]/g, '');
+
+  // Split into individual words by whitespace
+  const words = lowerText.split(/\s+/);
+
+  // Return true if any word is in our list
+  return words.some((word) => PROFANITY_LIST.includes(word));
+}
+
+/**
+ * =============================================================================
+ * Appointments Component
+ * =============================================================================
+ */
 function Appointments() {
   const [appointments, setAppointments] = useState([]);
   const [filteredAppointments, setFilteredAppointments] = useState([]);
@@ -29,37 +86,47 @@ function Appointments() {
   const [rating, setRating] = useState({});
   const [comment, setComment] = useState({});
   const dispatch = useDispatch();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
   const printRef = useRef();
+
+  // Helper function to check if appointment is within 24 hours
+  const isWithin24Hours = (appointmentDateTime) => {
+    const now = moment();
+    const appointmentMoment = moment(appointmentDateTime);
+    const diffHours = appointmentMoment.diff(now, 'hours');
+    return diffHours <= 24 && diffHours >= 0;
+  };
 
   const getData = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
       let response;
-      if (user.role === "doctor") {
+      if (user.role === 'doctor') {
         response = await GetDoctorAppointments(user.id);
       } else {
         response = await GetUserAppointments(user.id);
       }
       dispatch(ShowLoader(false));
       if (response.success) {
-        const sortedAppointments = response.data.sort((a, b) => moment(a.date).unix() - moment(b.date).unix());
+        const sortedAppointments = response.data.sort(
+          (a, b) => moment(a.date).unix() - moment(b.date).unix()
+        );
 
         const ratedSet = new Set();
-        const ratedStatus = {};
+        const ratedStats = {};
 
-        sortedAppointments.forEach(appointment => {
-          if (appointment.rated === "Yes") {
+        sortedAppointments.forEach((appointment) => {
+          if (appointment.rated === 'Yes') {
             ratedSet.add(appointment.id);
-            ratedStatus[appointment.id] = "Yes";
+            ratedStats[appointment.id] = 'Yes';
           } else {
-            ratedStatus[appointment.id] = "Not Yet";
+            ratedStats[appointment.id] = 'Not Yet';
           }
         });
 
         setRatedAppointments(ratedSet);
-        setRatedStatus(ratedStatus);
+        setRatedStatus(ratedStats);
         setAppointments(sortedAppointments);
       } else {
         throw new Error(response.message);
@@ -76,15 +143,15 @@ function Appointments() {
 
   const handleFilterChange = (value) => {
     setFilterType(value);
-    setFilterValue(null); // Reset the filter value when the filter type changes
+    setFilterValue(null);
   };
 
   const handleFilterValueChange = (value) => {
-    setFilterValue(value); // For Select, the value is directly passed
+    setFilterValue(value);
   };
 
   const handleFilterValueChangeInput = (e) => {
-    setFilterValue(e.target.value); // For Input, we get the value from the event
+    setFilterValue(e.target.value);
   };
 
   const handleSearch = () => {
@@ -92,21 +159,21 @@ function Appointments() {
 
     if (filterType && filterValue) {
       filtered = appointments.filter((appointment) => {
-        if (filterType === "Patients") {
+        if (filterType === 'Patients') {
           return appointment.userName
             .toLowerCase()
             .includes(filterValue.toLowerCase());
         }
-        if (filterType === "Doctors") {
+        if (filterType === 'Doctors') {
           return appointment.doctorName
             .toLowerCase()
             .includes(filterValue.toLowerCase());
         }
-        if (filterType === "Appointment Date") {
+        if (filterType === 'Appointment Date') {
           const [start, end] = filterValue;
-          return moment(appointment.date).isBetween(start, end, null, "[]");
+          return moment(appointment.date).isBetween(start, end, null, '[]');
         }
-        if (filterType === "Status") {
+        if (filterType === 'Status') {
           return appointment.status
             .toLowerCase()
             .includes(filterValue.toLowerCase());
@@ -121,11 +188,11 @@ function Appointments() {
 
   const handlePrint = () => {
     const printContent = printRef.current.innerHTML;
-    const printWindow = window.open("", "", "height=600,width=800");
-    printWindow.document.write("<html><head><title>Appointments Report</title>");
-    printWindow.document.write("</head><body >");
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Appointments Report</title>');
+    printWindow.document.write('</head><body>');
     printWindow.document.write(printContent);
-    printWindow.document.write("</body></html>");
+    printWindow.document.write('</body></html>');
     printWindow.document.close();
     printWindow.print();
   };
@@ -137,7 +204,8 @@ function Appointments() {
       message: text,
     };
 
-    emailjs.send('service_7rqzzbn', 'template_izpot6c', templateParams, 'MfjeugCZV3OLQrm7O')
+    emailjs
+      .send('service_7rqzzbn', 'template_izpot6c', templateParams, 'MfjeugCZV3OLQrm7O')
       .then((response) => {
         console.log('Email sent successfully:', response.status, response.text);
       })
@@ -149,8 +217,8 @@ function Appointments() {
   const onUpdate = async (id, status) => {
     try {
       dispatch(ShowLoader(true));
-      const appointment = appointments.find(app => app.id === id);
-      const userEmail = appointment.userEmail || appointment.user?.email; 
+      const appointment = appointments.find((app) => app.id === id);
+      const userEmail = appointment.userEmail || appointment.user?.email;
       const doctorEmail = appointment.doctorEmail || appointment.doctor?.email;
       const response = await UpdateAppointmentStatus(id, status);
       dispatch(ShowLoader(false));
@@ -174,25 +242,32 @@ function Appointments() {
       }
     } catch (error) {
       dispatch(ShowLoader(false));
-      message.error("Failed to update appointment: " + error.message);
+      message.error('Failed to update appointment: ' + error.message);
     }
   };
 
   const onDelete = async (id, navigateToBookAppointment, action) => {
     try {
       dispatch(ShowLoader(true));
-      const appointment = appointments.find(app => app.id === id);
+      const appointment = appointments.find((app) => app.id === id);
       const doctorEmail = appointment.doctorEmail;
-      const userEmail = appointment.userEmail || appointment.user?.email; 
+      const userEmail = appointment.userEmail || appointment.user?.email;
 
       const response = await DeleteAppointment(id);
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success(response.message);
 
-        const emailSubject = action === "reschedule" ? 'Appointment Reschedule Notice' : 'Appointment Cancellation Notice';
-        const emailTextUser = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been ${action === "reschedule" ? 'rescheduled' : 'cancelled'}.`;
-        const emailTextDoctor = `Dear Dr. ${appointment.doctorName},\n\nThe appointment with ${appointment.userName} on ${appointment.date} at ${appointment.slot} has been ${action === "reschedule" ? 'rescheduled' : 'cancelled'}.`;
+        const emailSubject =
+          action === 'reschedule'
+            ? 'Appointment Reschedule Notice'
+            : 'Appointment Cancellation Notice';
+        const emailTextUser = `Dear ${appointment.userName},\n\nYour appointment with Dr. ${appointment.doctorName} on ${appointment.date} at ${appointment.slot} has been ${
+          action === 'reschedule' ? 'rescheduled' : 'cancelled'
+        }.`;
+        const emailTextDoctor = `Dear Dr. ${appointment.doctorName},\n\nThe appointment with ${appointment.userName} on ${appointment.date} at ${appointment.slot} has been ${
+          action === 'reschedule' ? 'rescheduled' : 'cancelled'
+        }.`;
 
         if (doctorEmail) {
           sendEmailNotification(doctorEmail, emailSubject, emailTextDoctor);
@@ -216,14 +291,14 @@ function Appointments() {
   };
 
   const handleNotesChange = (appointmentId, value) => {
-    setNotes(prevNotes => ({
+    setNotes((prevNotes) => ({
       ...prevNotes,
       [appointmentId]: value,
     }));
   };
 
   const handleProblemChange = (appointmentId, value) => {
-    setProblems(prevProblems => ({
+    setProblems((prevProblems) => ({
       ...prevProblems,
       [appointmentId]: value,
     }));
@@ -238,7 +313,7 @@ function Appointments() {
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success('Notes saved successfully');
-        getData(); // Reload the data to reflect the saved notes
+        getData();
       } else {
         throw new Error(response.message);
       }
@@ -257,7 +332,7 @@ function Appointments() {
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success('Problem saved successfully');
-        getData(); // Reload the data to reflect the saved problem
+        getData();
       } else {
         throw new Error(response.message);
       }
@@ -268,14 +343,14 @@ function Appointments() {
   };
 
   const handleRatingChange = (appointmentId, value) => {
-    setRating(prevRating => ({
+    setRating((prevRating) => ({
       ...prevRating,
       [appointmentId]: value,
     }));
   };
 
   const handleCommentChange = (appointmentId, value) => {
-    setComment(prevComment => ({
+    setComment((prevComment) => ({
       ...prevComment,
       [appointmentId]: value,
     }));
@@ -283,60 +358,76 @@ function Appointments() {
 
   const recheckRating = async (appointmentId) => {
     try {
-      const appointment = appointments.find(app => app.id === appointmentId);
+      const appointment = appointments.find((app) => app.id === appointmentId);
       const doctorId = appointment.doctorId;
       const doctorData = await GetDoctorById(doctorId);
       const userHasRated = doctorData.data?.ratings?.some(
         (r) => r.userId === user.id
       );
       if (userHasRated) {
-        setRatedAppointments(prevRatedAppointments => new Set([...prevRatedAppointments, appointmentId]));
-        setRatedStatus(prevRatedStatus => ({
+        setRatedAppointments((prevRatedAppointments) => new Set([...prevRatedAppointments, appointmentId]));
+        setRatedStatus((prevRatedStatus) => ({
           ...prevRatedStatus,
-          [appointmentId]: "Yes"
+          [appointmentId]: 'Yes',
         }));
       }
     } catch (error) {
-      message.error("Error rechecking rating data.");
+      message.error('Error rechecking rating data.');
     }
   };
 
+  /**
+   * =========================================================================
+   * 2) INSERT PROFANITY CHECK INTO submitRating
+   * =========================================================================
+   */
   const submitRating = async (appointmentId, isModal) => {
     if (isModal) return;
 
     try {
       const selectedRating = rating[appointmentId];
       const userComment = comment[appointmentId];
+
       if (!selectedRating) {
-        message.error("Please select a rating before submitting.");
+        message.error('Please select a rating before submitting.');
+        return;
+      }
+
+      // >>> PROFANITY CHECK <<<
+      if (containsProfanity(userComment)) {
+        message.error('Your comment contains inappropriate language. Please revise.');
         return;
       }
 
       dispatch(ShowLoader(true));
-      
-      // Submit the rating with a comment
-      const response = await SubmitRating(appointments.find(app => app.id === appointmentId).doctorId, user.id, selectedRating, userComment, appointmentId);
-      
-      if (response.success) {
-        // Update Firestore 'rated' field to "Yes"
-        const appointmentDoc = doc(firestoreDatabase, 'appointments', appointmentId);
-        await updateDoc(appointmentDoc, { rated: "Yes" });
 
-        // Update the local state to reflect the rating submission
-        const updatedAppointments = appointments.map(app => 
-          app.id === appointmentId ? { ...app, rating: selectedRating, comment: userComment, rated: "Yes" } : app
+      const appointment = appointments.find((app) => app.id === appointmentId);
+      const response = await SubmitRating(
+        appointment.doctorId,
+        user.id,
+        selectedRating,
+        userComment,
+        appointmentId
+      );
+
+      if (response.success) {
+        const appointmentDoc = doc(firestoreDatabase, 'appointments', appointmentId);
+        await updateDoc(appointmentDoc, { rated: 'Yes' });
+
+        const updatedAppointments = appointments.map((app) =>
+          app.id === appointmentId
+            ? { ...app, rating: selectedRating, comment: userComment, rated: 'Yes' }
+            : app
         );
 
         setAppointments(updatedAppointments);
         setRatedAppointments(new Set([...ratedAppointments, appointmentId]));
-        setRatedStatus(prevRatedStatus => ({
+        setRatedStatus((prevRatedStatus) => ({
           ...prevRatedStatus,
-          [appointmentId]: "Yes"
+          [appointmentId]: 'Yes',
         }));
-        
-        message.success('Rating submitted successfully');
 
-        // Recheck if the rating UI should be hidden
+        message.success('Rating submitted successfully');
         recheckRating(appointmentId);
       } else {
         throw new Error(response.message);
@@ -349,19 +440,20 @@ function Appointments() {
   };
 
   const showConfirm = (id, isDoctor, navigateToBookAppointment, action) => {
-    const title = action === "reschedule" 
-      ? 'Are you sure you want to reschedule this appointment? This will delete the current appointment and cannot be undone.'
-      : 'Are you sure you want to cancel this appointment?';
+    const title =
+      action === 'reschedule'
+        ? 'Are you sure you want to reschedule this appointment? This will delete the current appointment and cannot be undone.'
+        : 'Are you sure you want to cancel this appointment?';
 
     Modal.confirm({
       title: title,
       onOk() {
         if (isDoctor) {
-          onUpdate(id, "cancelled");
+          onUpdate(id, 'cancelled');
         } else {
           onDelete(id, navigateToBookAppointment, action);
         }
-      }
+      },
     });
   };
 
@@ -382,7 +474,7 @@ function Appointments() {
             onChange={(dates, dateStrings) => {
               setSelectedKeys(dateStrings.length > 0 ? [dateStrings] : []);
             }}
-            style={{ marginBottom: 8, display: "block" }}
+            style={{ marginBottom: 8, display: 'block' }}
           />
         ) : (
           <Input
@@ -392,7 +484,7 @@ function Appointments() {
               setSelectedKeys(e.target.value ? [e.target.value] : [])
             }
             onPressEnter={() => confirm()}
-            style={{ marginBottom: 8, display: "block" }}
+            style={{ marginBottom: 8, display: 'block' }}
           />
         )}
         <Button
@@ -410,26 +502,23 @@ function Appointments() {
       </div>
     ),
     filterIcon: (filtered) => (
-      <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
+      <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
     ),
     onFilter: (value, record) =>
-      dataIndex === "date"
-        ? moment(record[dataIndex]).isBetween(value[0], value[1], null, "[]")
-        : record[dataIndex]
-            .toString()
-            .toLowerCase()
-            .includes(value.toLowerCase()),
+      dataIndex === 'date'
+        ? moment(record[dataIndex]).isBetween(value[0], value[1], null, '[]')
+        : record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
   });
 
   const renderNotesColumn = (text, record) => {
     const isModal = isModalVisible;
     return (
       <div>
-        {user.role === "doctor" ? (
+        {user.role === 'doctor' ? (
           <>
             <TextArea
               rows={4}
-              value={notes[record.id] || record.notes || ""}
+              value={notes[record.id] || record.notes || ''}
               onChange={(e) => handleNotesChange(record.id, e.target.value)}
             />
             {!isModal && (
@@ -437,7 +526,7 @@ function Appointments() {
             )}
           </>
         ) : (
-          <div>{record.notes || "Not Available"}</div>
+          <div>{record.notes || 'Not Available'}</div>
         )}
       </div>
     );
@@ -447,17 +536,19 @@ function Appointments() {
     const isPastDate = moment(record.date).isBefore(moment(), 'day');
     return (
       <div>
-        {user.role === "user" && !isPastDate ? (
+        {user.role === 'user' && !isPastDate ? (
           <>
             <TextArea
               rows={2}
-              value={problems[record.id] || record.problem || ""}
+              value={problems[record.id] || record.problem || ''}
               onChange={(e) => handleProblemChange(record.id, e.target.value)}
             />
-            <button onClick={() => saveProblem(record.id, isModalVisible)}>Save</button>
+            <button onClick={() => saveProblem(record.id, isModalVisible)}>
+              Save
+            </button>
           </>
         ) : (
-          <div>{record.problem || "No Problem specified"}</div>
+          <div>{record.problem || 'No Problem specified'}</div>
         )}
       </div>
     );
@@ -467,7 +558,7 @@ function Appointments() {
     const isPastDate = moment(record.date).isBefore(moment(), 'day');
     return (
       <div>
-        {user.role === "doctor" && !isPastDate ? (
+        {user.role === 'doctor' && !isPastDate ? (
           <Select
             value={record.status}
             onChange={(value) => handleChangeStatus(record.id, value)}
@@ -488,8 +579,8 @@ function Appointments() {
   };
 
   const renderRateDoctorColumn = (text, record) => {
-    if (user.role !== "doctor") {
-      const isRated = ratedStatus[record.id] === "Yes";
+    if (user.role !== 'doctor') {
+      const isRated = ratedStatus[record.id] === 'Yes';
 
       return (
         <div>
@@ -500,8 +591,10 @@ function Appointments() {
             placeholder="Rate"
             disabled={isRated}
           >
-            {[1, 2, 3, 4, 5].map(star => (
-              <Option key={star} value={star}>{`${star} Star${star > 1 ? 's' : ''}`}</Option>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Option key={star} value={star}>
+                {`${star} Star${star > 1 ? 's' : ''}`}
+              </Option>
             ))}
           </Select>
           <TextArea
@@ -512,7 +605,11 @@ function Appointments() {
             style={{ marginTop: 8 }}
             disabled={isRated}
           />
-          <Button type="primary" onClick={() => submitRating(record.id, false)} disabled={isRated}>
+          <Button
+            type="primary"
+            onClick={() => submitRating(record.id, false)}
+            disabled={isRated}
+          >
             Submit Rating
           </Button>
         </div>
@@ -527,35 +624,35 @@ function Appointments() {
       dataIndex: 'date',
       key: 'date',
       sorter: (a, b) => moment(a.date).unix() - moment(b.date).unix(),
-      ...getColumnSearchProps("date"),
+      ...getColumnSearchProps('date'),
     },
     {
       title: 'Time',
       dataIndex: 'slot',
       key: 'slot',
       sorter: (a, b) => a.slot.localeCompare(b.slot),
-      ...getColumnSearchProps("slot"),
+      ...getColumnSearchProps('slot'),
     },
     {
       title: 'Doctor',
       dataIndex: 'doctorName',
       key: 'doctorName',
       sorter: (a, b) => a.doctorName.localeCompare(b.doctorName),
-      ...getColumnSearchProps("doctorName"),
+      ...getColumnSearchProps('doctorName'),
     },
     {
       title: 'Patient',
       dataIndex: 'userName',
       key: 'userName',
       sorter: (a, b) => a.userName.localeCompare(b.userName),
-      ...getColumnSearchProps("userName"),
+      ...getColumnSearchProps('userName'),
     },
     {
       title: 'Booked On',
       dataIndex: 'bookedOn',
       key: 'bookedOn',
       sorter: (a, b) => moment(a.bookedOn).unix() - moment(b.bookedOn).unix(),
-      ...getColumnSearchProps("bookedOn"),
+      ...getColumnSearchProps('bookedOn'),
     },
     {
       title: 'Problem',
@@ -568,7 +665,7 @@ function Appointments() {
       dataIndex: 'status',
       key: 'status',
       render: renderStatusColumn,
-      ...getColumnSearchProps("status"),
+      ...getColumnSearchProps('status'),
     },
     {
       title: "Doctor's Notes",
@@ -586,11 +683,11 @@ function Appointments() {
       title: 'Rated',
       dataIndex: 'rated',
       key: 'rated',
-      render: (text, record) => ratedStatus[record.id] || "Not Yet",
-    }
+      render: (text, record) => ratedStatus[record.id] || 'Not Yet',
+    },
   ];
 
-  if (user.role === "doctor") {
+  if (user.role === 'doctor') {
     columns.push({
       title: 'Action',
       dataIndex: 'action',
@@ -598,7 +695,9 @@ function Appointments() {
       render: (text, record) => {
         const isPastDate = moment(record.date).isBefore(moment(), 'day');
         return !isPastDate ? (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div
+            style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+          >
             <Select
               value={record.status}
               onChange={(value) => handleChangeStatus(record.id, value)}
@@ -619,7 +718,7 @@ function Appointments() {
             </span>
           </div>
         ) : null;
-      }
+      },
     });
   } else {
     columns.push({
@@ -628,23 +727,64 @@ function Appointments() {
       key: 'modify',
       render: (text, record) => {
         const isPastDate = moment(record.date).isBefore(moment(), 'day');
+        const appointmentDateTime = moment(
+          `${record.date} ${record.slot}`,
+          'YYYY-MM-DD HH:mm'
+        );
+        const within24Hours = isWithin24Hours(appointmentDateTime);
+
+        // Only apply disabling logic if user is a patient
+        const disableActions = user.role === 'user' && within24Hours;
+
         return !isPastDate ? (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <span
-              style={{ textDecoration: 'underline', cursor: 'pointer' }}
-              onClick={() => showConfirm(record.id, false)}
+            <Tooltip
+              title={
+                disableActions
+                  ? 'Cannot cancel within 24 hours of the appointment'
+                  : 'Cancel Appointment'
+              }
             >
-              Cancel
-            </span>
-            <span
-              style={{ textDecoration: 'underline', cursor: 'pointer' }}
-              onClick={() => showConfirm(record.id, false, record.doctorId, 'reschedule')}
+              <span
+                style={{
+                  textDecoration: 'underline',
+                  cursor: disableActions ? 'not-allowed' : 'pointer',
+                  color: disableActions ? 'grey' : 'blue',
+                }}
+                onClick={() => {
+                  if (!disableActions) {
+                    showConfirm(record.id, false);
+                  }
+                }}
+              >
+                Cancel
+              </span>
+            </Tooltip>
+            <Tooltip
+              title={
+                disableActions
+                  ? 'Cannot reschedule within 24 hours of the appointment'
+                  : 'Reschedule Appointment'
+              }
             >
-              Reschedule
-            </span>
+              <span
+                style={{
+                  textDecoration: 'underline',
+                  cursor: disableActions ? 'not-allowed' : 'pointer',
+                  color: disableActions ? 'grey' : 'blue',
+                }}
+                onClick={() => {
+                  if (!disableActions) {
+                    showConfirm(record.id, false, record.doctorId, 'reschedule');
+                  }
+                }}
+              >
+                Reschedule
+              </span>
+            </Tooltip>
           </div>
         ) : null;
-      }
+      },
     });
   }
 
@@ -656,30 +796,26 @@ function Appointments() {
           placeholder={`Select Filter`}
           onChange={handleFilterChange}
         >
-          {user.role === 'user' && (
-            <Option value="Doctors">Doctors</Option>
-          )}
-          {user.role === 'doctor' && (
-            <Option value="Patients">Patients</Option>
-          )}
+          {user.role === 'user' && <Option value="Doctors">Doctors</Option>}
+          {user.role === 'doctor' && <Option value="Patients">Patients</Option>}
           <Option value="Appointment Date">Appointment Date</Option>
           <Option value="Status">Status</Option>
         </Select>
 
-        {(filterType === 'Doctors' && user.role === 'user') && (
+        {filterType === 'Doctors' && user.role === 'user' && (
           <Input
             placeholder="Enter Doctor's Name"
             value={filterValue}
-            onChange={handleFilterValueChangeInput} // Use Input-specific handler
+            onChange={handleFilterValueChangeInput}
             style={{ width: 200 }}
           />
         )}
 
-        {(filterType === 'Patients' && user.role === 'doctor') && (
+        {filterType === 'Patients' && user.role === 'doctor' && (
           <Input
             placeholder="Enter Patient's Name"
             value={filterValue}
-            onChange={handleFilterValueChangeInput} // Use Input-specific handler
+            onChange={handleFilterValueChangeInput}
             style={{ width: 200 }}
           />
         )}
@@ -695,7 +831,7 @@ function Appointments() {
           <Select
             style={{ width: 200 }}
             placeholder="Select Status"
-            onChange={handleFilterValueChange} // Use Select-specific handler
+            onChange={handleFilterValueChange}
           >
             <Option value="pending">Pending</Option>
             <Option value="approved">Approved</Option>
@@ -724,12 +860,20 @@ function Appointments() {
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={[
-          <Button key="print" style={{ backgroundColor: 'light blue', color: 'white' }} onClick={handlePrint}>Print</Button>
+          <Button
+            key="print"
+            style={{ backgroundColor: 'light blue', color: 'white' }}
+            onClick={handlePrint}
+          >
+            Print
+          </Button>,
         ]}
       >
         <div ref={printRef}>
           <Table
-            columns={columns.filter(col => col.key !== 'modify' && col.key !== 'action')}
+            columns={columns.filter(
+              (col) => col.key !== 'modify' && col.key !== 'action'
+            )}
             dataSource={filteredAppointments}
             pagination={false}
             rowKey="id"
