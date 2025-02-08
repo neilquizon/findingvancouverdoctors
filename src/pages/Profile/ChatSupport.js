@@ -20,17 +20,17 @@ function ChatSupport({ userId }) {
     {
       question: "How do I reset my password?",
       answer:
-        "To reset your password, go to your profile settings and click 'Reset Password'.",
+        "To reset your password, click 'Forgot Password' in the login screen",
     },
     {
       question: "How do I contact support?",
       answer:
-        "You can email us at support@example.com or use this chat to speak with an agent.",
+        "You can email us at findingvancouver@google.com or use this chat to speak with an agent.",
     },
     {
-      question: "Where can I view my orders?",
+      question: "Where can I view my appointments?",
       answer:
-        "You can view your orders under 'My Orders' in your account dashboard.",
+        "You can view your appintments under 'Appintments' in your account dashboard.",
     },
     // Add more Q&A as needed
   ];
